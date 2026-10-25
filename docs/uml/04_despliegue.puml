@@ -1,0 +1,53 @@
+@startuml 04_despliegue
+' Diagrama de despliegue
+' Fuente: Documento de Levantamiento de Requerimientos, secciones 8 y 11
+' El proveedor de nube concreto se define al construir el prototipo.
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontSize 12
+skinparam nodesep 40
+skinparam ranksep 50
+
+title Diagrama de despliegue\nSistema de Gestión "Salud Integral"
+
+node "Equipo del usuario\n<<dispositivo>>" as CLI {
+  component "Navegador web\n(Chrome, Edge, Firefox)" as NAV
+}
+
+cloud "Proveedor de nube" as NUBE {
+  node "Servidor de aplicación\n<<contenedor o servicio web>>" as APP {
+    component "Interfaz web" as WEB
+    component "API REST y seguridad\n(autenticación y roles)" as API
+    component "Servicios de aplicación" as SRV
+    component "Repositorios\n(patrón Repository)" as REP
+  }
+
+  node "Base de datos administrada\n<<servicio de base de datos>>" as DBN {
+    database "Base de datos\nrelacional" as BD
+  }
+
+  node "Almacenamiento de archivos\n<<servicio de almacenamiento>>" as ALM {
+    artifact "Documentos clínicos\nadjuntos" as DOC
+  }
+
+  node "Servicio de respaldos\n<<servicio de nube>>" as RES {
+    artifact "Copias de seguridad\ndiarias" as BAK
+  }
+}
+
+node "Servicio de notificaciones\n<<sistema externo>>" as EXT {
+  component "Envío de correo / SMS" as MAIL
+}
+
+NAV --> WEB : HTTPS
+WEB --> API
+API --> SRV
+SRV --> REP
+REP --> BD : conexión cifrada
+REP --> DOC : HTTPS
+BD --> BAK : respaldo diario\n(RNF-05)
+SRV --> MAIL : HTTPS\n(recordatorios, RF-10)
+
+@enduml
