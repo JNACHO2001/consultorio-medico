@@ -1,0 +1,75 @@
+@startuml 03_secuencia_agendar_cita
+' Diagrama de secuencia: CU-04 Agendar cita (incluye CU-03 Buscar paciente y CU-10 Enviar recordatorio)
+' Fuente: Documento de Levantamiento de Requerimientos, sección 10.3
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontSize 12
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+title Diagrama de secuencia: CU-04 Agendar cita\nSistema de Gestión "Salud Integral"
+
+actor "Recepcionista" as REC
+participant "Interfaz web" as UI
+participant "API y\nseguridad" as API
+participant "PacienteService" as PS
+participant "CitaService" as CS
+participant "IPacienteRepository" as PR
+participant "ICitaRepository" as CR
+database "Base de datos" as BD
+participant "Servicio de\nnotificaciones" as NOT
+
+autonumber
+
+== Buscar al paciente (CU-03) ==
+REC -> UI : ingresa documento del paciente
+UI -> API : GET /pacientes?documento=...
+API -> API : validar sesión y rol (RNF-01)
+API -> PS : buscarPaciente(documento)
+PS -> PR : obtenerPorDocumento(tipo, numero)
+PR -> BD : SELECT paciente
+BD --> PR : registro
+PR --> PS : Paciente
+PS --> API : Paciente
+API --> UI : 200 OK (datos del paciente)
+
+== Consultar horarios libres ==
+REC -> UI : elige médico y fecha
+UI -> API : GET /citas/horarios-libres?medico=...&fecha=...
+API -> CS : consultarHorariosLibres(medicoId, fecha)
+CS -> CR : obtenerPorMedicoYFecha(medicoId, fecha)
+CR -> BD : SELECT citas del día
+BD --> CR : citas ocupadas
+CR --> CS : List<Cita>
+CS --> API : horarios libres
+API --> UI : 200 OK (lista de horarios)
+UI --> REC : muestra horarios libres
+
+== Confirmar la cita ==
+REC -> UI : selecciona un horario y confirma
+UI -> API : POST /citas
+API -> CS : agendarCita(pacienteId, medicoId, fechaHora)
+CS -> CR : existeCruce(medicoId, fechaHora)
+CR -> BD : SELECT cita en ese horario
+BD --> CR : resultado
+CR --> CS : Boolean
+
+alt el horario ya fue ocupado (RN-02)
+  CS --> API : error: horario no disponible
+  API --> UI : 409 Conflict
+  UI --> REC : informa y propone otros horarios
+else el horario está libre
+  CS -> CR : agregar(cita con estado PROGRAMADA)
+  CR -> BD : INSERT cita
+  BD --> CR : cita guardada
+  CR --> CS : Cita
+  CS -> NOT : programarRecordatorio(cita) (CU-10)
+  NOT --> CS : recordatorio programado
+  CS --> API : Cita
+  API --> UI : 201 Created
+  UI --> REC : "Cita programada"
+end
+
+@enduml
