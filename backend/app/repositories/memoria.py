@@ -13,10 +13,10 @@ from __future__ import annotations
 import copy
 import threading
 import unicodedata
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta
 from typing import Generic, Optional, TypeVar
 
-from app.core.contexto import obtener_usuario
+from app.core.auditoria import auditar as _auditar
 from app.domain.excepciones import NoEncontrado
 from app.domain.modelos import (
     Cita,
@@ -47,24 +47,6 @@ def _normalizar(texto: str) -> str:
     """Minúsculas y sin tildes, para buscar sin distinguir acentos."""
     descompuesto = unicodedata.normalize("NFKD", texto or "")
     return "".join(c for c in descompuesto if not unicodedata.combining(c)).lower().strip()
-
-
-def _auditar(
-    auditoria: IAuditoriaRepository, entidad: str, accion: str, id_entidad: int = 0
-) -> None:
-    usuario = obtener_usuario()
-    if usuario is None:  # carga de datos demo o tarea interna: no hay quién audite
-        return
-    auditoria.registrar(
-        RegistroAuditoria(
-            fecha_hora=datetime.now(timezone.utc),
-            usuario_id=usuario.id,
-            usuario=usuario.nombre_usuario,
-            accion=accion,
-            entidad=entidad,
-            id_entidad=id_entidad,
-        )
-    )
 
 
 class MemoryRepository(IRepository[T], Generic[T]):
