@@ -1,0 +1,64 @@
+@startuml 01_casos_de_uso
+' Diagrama de casos de uso - Sistema de Gestión "Salud Integral"
+' Fuente: Documento de Levantamiento de Requerimientos, sección 10
+
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontSize 12
+skinparam packageStyle rectangle
+skinparam nodesep 30
+skinparam ranksep 45
+
+title Diagrama de casos de uso\nSistema de Gestión "Salud Integral"
+
+actor "Recepcionista" as REC
+actor "Médico" as MED
+actor "Administrador" as ADM
+
+rectangle "Sistema de Gestión – Salud Integral" {
+  usecase "CU-02\nRegistrar paciente" as CU02
+  usecase "CU-04\nAgendar cita" as CU04
+  usecase "CU-05\nReprogramar o\ncancelar cita" as CU05
+  usecase "CU-06\nConsultar agenda" as CU06
+  usecase "CU-07\nRegistrar consulta\nmédica" as CU07
+  usecase "CU-11\nGestionar usuarios\ny roles" as CU11
+  usecase "CU-12\nConsultar bitácora\nde auditoría" as CU12
+  usecase "CU-03\nBuscar paciente" as CU03
+  usecase "CU-08\nConsultar historia\nclínica" as CU08
+  usecase "CU-09\nAdjuntar documento\nclínico" as CU09
+  usecase "CU-10\nEnviar recordatorio\nde cita" as CU10
+  usecase "CU-01\nIniciar sesión" as CU01
+}
+
+actor "Servicio de\nnotificaciones" as NOT <<sistema externo>>
+
+REC --> CU02
+REC --> CU04
+REC --> CU05
+REC --> CU06
+REC --> CU03
+
+MED --> CU06
+MED --> CU07
+MED --> CU03
+MED --> CU08
+
+ADM --> CU11
+ADM --> CU12
+
+CU04 ..> CU03 : <<include>>
+CU04 ..> CU10 : <<include>>
+CU07 ..> CU08 : <<include>>
+CU09 .up.> CU07 : <<extend>>
+
+CU10 <-- NOT
+
+note right of CU01
+  Todos los casos de uso, excepto CU-01 y CU-10,
+  incluyen CU-01 (<<include>>). Las flechas no se
+  dibujan para mantener el diagrama legible.
+end note
+
+@enduml
