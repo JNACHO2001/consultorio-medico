@@ -1,0 +1,125 @@
+@startuml 02a_clases_dominio
+' Diagrama de clases (vista 1): modelo de dominio
+' Fuente: Documento de Levantamiento de Requerimientos, secciones 7 a 10
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontSize 12
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+title Diagrama de clases (1 de 2): modelo de dominio\nSistema de Gestión "Salud Integral"
+
+enum Rol {
+  RECEPCION
+  MEDICO
+  ADMINISTRADOR
+}
+
+enum EstadoCita {
+  PROGRAMADA
+  CANCELADA
+  ATENDIDA
+}
+
+class Usuario {
+  - id : Long
+  - nombreUsuario : String
+  - contrasenaHash : String
+  - nombreCompleto : String
+  - activo : Boolean
+}
+
+class Medico {
+  - especialidad : String
+  - registroMedico : String
+}
+
+class Paciente {
+  - id : Long
+  - tipoDocumento : String
+  - numeroDocumento : String
+  - nombres : String
+  - apellidos : String
+  - fechaNacimiento : Date
+  - sexo : String
+  - telefono : String
+  - correo : String
+  - eps : String
+  - alergias : String
+  - activo : Boolean
+}
+
+class Cita {
+  - id : Long
+  - fechaHora : DateTime
+  - estado : EstadoCita
+  - motivoCancelacion : String
+}
+
+class HistoriaClinica {
+  - id : Long
+  - fechaApertura : Date
+}
+
+class Consulta {
+  - id : Long
+  - fechaHora : DateTime
+  - motivo : String
+  - antecedentes : String
+  - signosVitales : String
+  - diagnostico : String
+  - tratamiento : String
+  - formula : String
+  - observaciones : String
+  - cerrada : Boolean
+}
+
+class NotaAclaratoria {
+  - texto : String
+  - fecha : DateTime
+}
+
+class DocumentoAdjunto {
+  - nombreArchivo : String
+  - tipo : String
+  - tamanoBytes : Long
+  - ruta : String
+}
+
+class RegistroAuditoria {
+  - id : Long
+  - fechaHora : DateTime
+  - accion : String
+  - entidad : String
+  - idEntidad : Long
+}
+
+Usuario <|-- Medico
+Usuario "*" --> "1" Rol : tiene
+
+Paciente "1" -- "1" HistoriaClinica : posee
+HistoriaClinica "1" *-- "*" Consulta : contiene
+Consulta "1" *-- "*" NotaAclaratoria : se corrige con
+Consulta "1" *-- "*" DocumentoAdjunto : incluye
+
+Cita "*" --> "1" Paciente : es de
+Cita "*" --> "1" Medico : atiende
+Cita --> EstadoCita
+Consulta "0..1" --> "1" Cita : surge de
+Consulta "*" --> "1" Medico : registra
+
+RegistroAuditoria "*" --> "1" Usuario : realizado por
+
+note bottom of Consulta
+  Una consulta cerrada no se modifica:
+  solo se corrige con NotaAclaratoria (RN-04).
+end note
+
+note bottom of Paciente
+  tipoDocumento + numeroDocumento
+  identifican de forma única (RN-01).
+end note
+
+@enduml
