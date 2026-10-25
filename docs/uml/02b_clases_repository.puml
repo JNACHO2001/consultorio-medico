@@ -1,0 +1,127 @@
+@startuml 02b_clases_repository
+' Diagrama de clases (vista 2): servicios y patrón Repository
+' Fuente: Documento de Levantamiento de Requerimientos, sección 11
+
+left to right direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontSize 12
+skinparam classAttributeIconSize 0
+skinparam nodesep 25
+skinparam ranksep 90
+
+title Diagrama de clases (2 de 2): servicios y patrón Repository\nSistema de Gestión "Salud Integral"
+
+' ---------- Capa de servicios de aplicación ----------
+class PacienteService <<servicio>> {
+  + registrarPaciente(datos) : Paciente
+  + buscarPaciente(criterio) : List<Paciente>
+  + actualizarPaciente(id, datos) : Paciente
+}
+
+class CitaService <<servicio>> {
+  + consultarHorariosLibres(medicoId, fecha) : List<DateTime>
+  + agendarCita(pacienteId, medicoId, fechaHora) : Cita
+  + reprogramarCita(citaId, fechaHora) : Cita
+  + cancelarCita(citaId, motivo) : void
+  + consultarAgenda(medicoId, fecha) : List<Cita>
+}
+
+class ConsultaService <<servicio>> {
+  + registrarConsulta(citaId, datos) : Consulta
+  + cerrarConsulta(consultaId) : void
+  + agregarNota(consultaId, texto) : void
+  + consultarHistorial(pacienteId) : List<Consulta>
+  + adjuntarDocumento(consultaId, archivo) : void
+}
+
+class AutenticacionService <<servicio>> {
+  + iniciarSesion(usuario, contrasena) : Sesion
+  + cerrarSesion(sesion) : void
+}
+
+' ---------- Interfaces Repository (capa de dominio) ----------
+interface IPacienteRepository {
+  + obtenerPorDocumento(tipo, numero) : Paciente
+  + buscar(texto) : List<Paciente>
+}
+
+interface ICitaRepository {
+  + obtenerPorMedicoYFecha(medicoId, fecha) : List<Cita>
+  + existeCruce(medicoId, fechaHora) : Boolean
+  + actualizarEstado(citaId, estado) : void
+}
+
+interface IConsultaRepository {
+  + obtenerPorPaciente(pacienteId) : List<Consulta>
+  + agregarNota(consultaId, nota) : void
+}
+
+interface IUsuarioRepository {
+  + obtenerPorNombreUsuario(nombre) : Usuario
+}
+
+interface IAuditoriaRepository {
+  + registrar(registro) : void
+  + consultar(filtros) : List<RegistroAuditoria>
+}
+
+interface "IRepository<T>" as IRepository {
+  + agregar(entidad : T) : T
+  + obtenerPorId(id : Long) : T
+  + actualizar(entidad : T) : T
+  + desactivar(id : Long) : void
+}
+
+' ---------- Implementaciones (infraestructura) ----------
+class SqlPacienteRepository <<implementación>>
+class SqlCitaRepository <<implementación>>
+class SqlConsultaRepository <<implementación>>
+class SqlUsuarioRepository <<implementación>>
+class SqlAuditoriaRepository <<implementación>>
+
+class "Base de datos en la nube" as BD <<base de datos>>
+
+' Los servicios dependen de interfaces, nunca de implementaciones
+PacienteService ..> IPacienteRepository
+CitaService ..> ICitaRepository
+CitaService ..> IPacienteRepository
+ConsultaService ..> IConsultaRepository
+AutenticacionService ..> IUsuarioRepository
+
+' Interfaz genérica común (T = entidad)
+IPacienteRepository --|> IRepository
+ICitaRepository --|> IRepository
+IConsultaRepository --|> IRepository
+IUsuarioRepository --|> IRepository
+
+' Implementaciones
+SqlPacienteRepository ..|> IPacienteRepository
+SqlCitaRepository ..|> ICitaRepository
+SqlConsultaRepository ..|> IConsultaRepository
+SqlUsuarioRepository ..|> IUsuarioRepository
+SqlAuditoriaRepository ..|> IAuditoriaRepository
+
+' Auditoría disparada desde el repositorio (RF-13)
+SqlPacienteRepository ..> IAuditoriaRepository : registra accesos
+SqlConsultaRepository ..> IAuditoriaRepository : registra accesos
+
+SqlPacienteRepository --> BD
+SqlCitaRepository --> BD
+SqlConsultaRepository --> BD
+SqlUsuarioRepository --> BD
+SqlAuditoriaRepository --> BD
+
+note bottom of IRepository
+  desactivar() hace borrado lógico:
+  no existe eliminación física (RNF-11).
+  T = Paciente, Cita, Consulta o Usuario.
+end note
+
+note bottom of BD
+  Solo las implementaciones acceden
+  a la base de datos (RNF-09).
+end note
+
+@enduml
