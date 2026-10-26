@@ -7,6 +7,9 @@ import { montarMiAgenda, montarAtencion } from "./vistas/medico.js";
 import { montarUsuarios } from "./vistas/usuarios.js";
 import { montarAuditoria } from "./vistas/auditoria.js";
 import { montarRecordatorios } from "./vistas/recordatorios.js";
+import { montarIngreso, montarIngresos } from "./vistas/ingresos.js";
+import { montarFacturas } from "./vistas/facturas.js";
+import { montarCatalogo } from "./vistas/catalogo.js";
 
 const raiz = document.getElementById("app");
 
@@ -16,6 +19,10 @@ const RUTAS = {
   "mi-agenda": { titulo: "Mi agenda", roles: ["MEDICO"], montar: montarMiAgenda },
   atencion: { titulo: "Atención", roles: ["MEDICO"], montar: montarAtencion, oculta: true, padre: "mi-agenda" },
   pacientes: { titulo: "Pacientes", roles: ["RECEPCION", "MEDICO"], montar: montarPacientes },
+  ingresos: { titulo: "Ingresos", roles: ["RECEPCION", "MEDICO"], montar: montarIngresos },
+  ingreso: { titulo: "Cuenta del ingreso", roles: ["RECEPCION", "MEDICO"], montar: montarIngreso, oculta: true, padre: "ingresos" },
+  facturas: { titulo: "Facturación", roles: ["RECEPCION", "ADMINISTRADOR"], montar: montarFacturas },
+  catalogo: { titulo: "Catálogo y tarifas", roles: ["RECEPCION", "MEDICO", "ADMINISTRADOR"], montar: montarCatalogo },
   recordatorios: { titulo: "Recordatorios", roles: ["RECEPCION", "ADMINISTRADOR"], montar: montarRecordatorios },
   usuarios: { titulo: "Usuarios", roles: ["ADMINISTRADOR"], montar: montarUsuarios },
   auditoria: { titulo: "Bitácora de auditoría", roles: ["ADMINISTRADOR"], montar: montarAuditoria },
