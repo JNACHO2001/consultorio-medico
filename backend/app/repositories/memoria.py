@@ -451,6 +451,16 @@ class MemoryProcedimientoRealizadoRepository(
         _auditar(self._auditoria, "Procedimiento", "LECTURA_MULTIPLE", ingreso_id)
         return encontrados
 
+    def obtener_por_ingresos(self, ingreso_ids: list[int]) -> list[ProcedimientoRealizado]:
+        buscados = set(ingreso_ids)
+        with self._lock:
+            encontrados = [
+                copy.deepcopy(p) for p in self._items if p.activo and p.ingreso_id in buscados
+            ]
+        encontrados.sort(key=lambda p: (p.fecha_hora or datetime.min, p.id))
+        _auditar(self._auditoria, "Procedimiento", "LECTURA_MULTIPLE")
+        return encontrados
+
     def obtener_por_paciente(self, paciente_id: int) -> list[ProcedimientoRealizado]:
         with self._lock:
             encontrados = [
