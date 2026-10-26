@@ -64,7 +64,17 @@ export function edad(fechaNacimiento) {
 }
 
 export const ROLES = { RECEPCION: "Recepción", MEDICO: "Médico", ADMINISTRADOR: "Administrador" };
-export const ESTADOS = { PROGRAMADA: "Programada", ATENDIDA: "Atendida", CANCELADA: "Cancelada" };
+export const ESTADOS = {
+  PROGRAMADA: "Programada", ATENDIDA: "Atendida", CANCELADA: "Cancelada",
+  ABIERTO: "Abierto", EGRESADO: "Egresado",
+  EMITIDA: "Por cobrar", PAGADA: "Pagada", ANULADA: "Anulada",
+};
+export const TIPOS_INGRESO = { AMBULATORIO: "Ambulatorio", URGENCIAS: "Urgencias", OBSERVACION: "Observación" };
+export const METODOS_PAGO = [["EFECTIVO", "Efectivo"], ["TARJETA", "Tarjeta"], ["TRANSFERENCIA", "Transferencia"], ["EPS", "Cobro a la EPS"]];
+
+// Los valores son pesos colombianos enteros.
+const formatoPesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+export const pesos = (valor) => formatoPesos.format(valor ?? 0);
 
 export const sello = (estado) => h("span", { class: `sello ${estado.toLowerCase()}` }, ESTADOS[estado] || estado);
 
