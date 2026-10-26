@@ -33,7 +33,11 @@ class ConsultaService <<servicio>> {
   + cerrarConsulta(consultaId) : void
   + agregarNota(consultaId, texto) : void
   + consultarHistorial(pacienteId) : List<Consulta>
-  + adjuntarDocumento(consultaId, archivo) : void
+}
+
+class NotificacionService <<servicio>> {
+  + programarRecordatorio(cita) : void
+  + procesarPendientes(ahora) : List<Recordatorio>
 }
 
 class AutenticacionService <<servicio>> {
@@ -45,6 +49,7 @@ class AutenticacionService <<servicio>> {
 interface IPacienteRepository {
   + obtenerPorDocumento(tipo, numero) : Paciente
   + buscar(texto) : List<Paciente>
+  + obtenerPorIds(ids) : List<Paciente>
 }
 
 interface ICitaRepository {
@@ -55,11 +60,17 @@ interface ICitaRepository {
 
 interface IConsultaRepository {
   + obtenerPorPaciente(pacienteId) : List<Consulta>
+  + obtenerPorCita(citaId) : Consulta
   + agregarNota(consultaId, nota) : void
 }
 
 interface IUsuarioRepository {
   + obtenerPorNombreUsuario(nombre) : Usuario
+}
+
+interface IRecordatorioRepository {
+  + obtenerPorCita(citaId) : Recordatorio
+  + obtenerPendientes(hasta) : List<Recordatorio>
 }
 
 interface IAuditoriaRepository {
@@ -70,18 +81,20 @@ interface IAuditoriaRepository {
 interface "IRepository<T>" as IRepository {
   + agregar(entidad : T) : T
   + obtenerPorId(id : Long) : T
+  + listar(incluirInactivos : Boolean) : List<T>
   + actualizar(entidad : T) : T
   + desactivar(id : Long) : void
 }
 
 ' ---------- Implementaciones (infraestructura) ----------
-class SqlPacienteRepository <<implementación>>
-class SqlCitaRepository <<implementación>>
-class SqlConsultaRepository <<implementación>>
-class SqlUsuarioRepository <<implementación>>
-class SqlAuditoriaRepository <<implementación>>
+class MemoryPacienteRepository <<implementación>>
+class MemoryCitaRepository <<implementación>>
+class MemoryConsultaRepository <<implementación>>
+class MemoryUsuarioRepository <<implementación>>
+class MemoryRecordatorioRepository <<implementación>>
+class MemoryAuditoriaRepository <<implementación>>
 
-class "Base de datos en la nube" as BD <<base de datos>>
+class "Listas de objetos en memoria\n(base de datos del prototipo)" as BD <<almacén>>
 
 ' Los servicios dependen de interfaces, nunca de implementaciones
 PacienteService ..> IPacienteRepository
@@ -89,29 +102,34 @@ CitaService ..> ICitaRepository
 CitaService ..> IPacienteRepository
 ConsultaService ..> IConsultaRepository
 AutenticacionService ..> IUsuarioRepository
+NotificacionService ..> IRecordatorioRepository
+CitaService ..> NotificacionService : programa recordatorio
 
 ' Interfaz genérica común (T = entidad)
 IPacienteRepository --|> IRepository
 ICitaRepository --|> IRepository
 IConsultaRepository --|> IRepository
 IUsuarioRepository --|> IRepository
+IRecordatorioRepository --|> IRepository
 
 ' Implementaciones
-SqlPacienteRepository ..|> IPacienteRepository
-SqlCitaRepository ..|> ICitaRepository
-SqlConsultaRepository ..|> IConsultaRepository
-SqlUsuarioRepository ..|> IUsuarioRepository
-SqlAuditoriaRepository ..|> IAuditoriaRepository
+MemoryPacienteRepository ..|> IPacienteRepository
+MemoryCitaRepository ..|> ICitaRepository
+MemoryConsultaRepository ..|> IConsultaRepository
+MemoryUsuarioRepository ..|> IUsuarioRepository
+MemoryRecordatorioRepository ..|> IRecordatorioRepository
+MemoryAuditoriaRepository ..|> IAuditoriaRepository
 
 ' Auditoría disparada desde el repositorio (RF-13)
-SqlPacienteRepository ..> IAuditoriaRepository : registra accesos
-SqlConsultaRepository ..> IAuditoriaRepository : registra accesos
+MemoryPacienteRepository ..> IAuditoriaRepository : registra accesos
+MemoryConsultaRepository ..> IAuditoriaRepository : registra accesos
 
-SqlPacienteRepository --> BD
-SqlCitaRepository --> BD
-SqlConsultaRepository --> BD
-SqlUsuarioRepository --> BD
-SqlAuditoriaRepository --> BD
+MemoryPacienteRepository --> BD
+MemoryCitaRepository --> BD
+MemoryConsultaRepository --> BD
+MemoryUsuarioRepository --> BD
+MemoryRecordatorioRepository --> BD
+MemoryAuditoriaRepository --> BD
 
 note bottom of IRepository
   desactivar() hace borrado lógico:
@@ -121,7 +139,10 @@ end note
 
 note bottom of BD
   Solo las implementaciones acceden
-  a la base de datos (RNF-09).
+  al almacén (RNF-09). Para producción
+  se escriben clases Sql*Repository que
+  cumplen las mismas interfaces; los
+  servicios no cambian.
 end note
 
 @enduml
