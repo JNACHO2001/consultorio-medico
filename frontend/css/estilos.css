@@ -172,7 +172,11 @@ input[readonly], textarea[readonly], input:disabled, select:disabled { backgroun
 .sello { display: inline-block; padding: .1rem .55rem; border-radius: 99px; font-size: .85rem; font-weight: 700; border: 1.5px solid currentColor; }
 .sello.programada { color: var(--programada); background: #fff; }
 .sello.atendida { color: var(--atendida); background: #fff; }
-.sello.cancelada { color: var(--cancelada); background: #fff; }
+.sello.cancelada, .sello.anulada, .sello.anulado { color: var(--cancelada); background: #fff; }
+.sello.abierto { color: var(--programada); background: #fff; }
+.sello.egresado { color: var(--tinta-suave); background: #fff; }
+.sello.emitida { color: var(--aviso); background: #fff; }
+.sello.pagada { color: var(--atendida); background: #fff; }
 .lista-simple { list-style: none; margin: 0; padding: 0; }
 .lista-simple li { padding: .5rem 0; border-bottom: 1px solid var(--linea); }
 .lista-simple li:last-child { border-bottom: 0; }
@@ -218,6 +222,29 @@ th { font-size: .9rem; color: var(--tinta-suave); background: #f6f9f8; position:
 td.num, th.num { text-align: right; }
 td.fecha { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
+/* ---------- ingresos, cuenta y facturación ---------- */
+td.num-izq { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.celda-acciones { white-space: nowrap; display: flex; gap: .4rem; }
+table.cuenta tbody tr.anulada td { color: var(--tinta-suave); background: #faf5f4; }
+table.cuenta tfoot th { background: #f6f9f8; font-size: 1rem; color: var(--tinta); position: static; }
+table.cuenta .total { font-size: 1.15rem; }
+.totales { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .6rem 2rem; margin-top: 1rem; padding-top: .8rem; border-top: 2px solid var(--linea); }
+.totales div { text-align: right; }
+.totales small { display: block; color: var(--tinta-suave); }
+.totales b { font-size: 1.35rem; }
+.resumen-cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+.cifra { padding: .8rem 1rem; border: 1px solid var(--linea); border-left: 6px solid var(--linea-fuerte); border-radius: var(--radio); background: #fbfcfc; }
+.cifra.pendiente { border-left-color: #c99400; }
+.cifra.ok { border-left-color: var(--atendida); }
+.cifra small { display: block; color: var(--tinta-suave); }
+.cifra b { font-size: 1.4rem; }
+.valor-previo { margin: .2rem 0 1rem; }
+.valor-previo b { font-size: 1.1rem; }
+.paciente-elegido { display: flex; justify-content: space-between; align-items: center; gap: .8rem; padding: .6rem .9rem; margin-bottom: .9rem; border: 1.5px solid var(--pino); border-radius: var(--radio); background: var(--pino-claro); }
+.pago { display: flex; align-items: end; gap: .6rem; flex-wrap: wrap; }
+.pago .campo { margin: 0; }
+td input[type="checkbox"] { width: 22px; min-height: 22px; height: 22px; }
+
 /* ---------- diálogos y avisos ---------- */
 dialog { border: 0; border-radius: 10px; padding: 0; width: min(560px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); box-shadow: 0 20px 60px rgba(8, 40, 46, .35); color: var(--tinta); }
 dialog::backdrop { background: rgba(8, 40, 46, .55); }
@@ -251,6 +278,12 @@ dialog.ancho { width: min(760px, calc(100vw - 2rem)); }
 @media (max-width: 520px) {
   .franja { grid-template-columns: 58px 1fr; }
   .lateral .sesion span { display: none; }
+}
+@media print {
+  #app, #avisos, .no-imprimir, .dialogo-cabecera .cerrar { display: none !important; }
+  dialog[open] { position: static; width: auto; max-height: none; box-shadow: none; }
+  dialog::backdrop { display: none; }
+  body { background: #fff; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .franja .contenido { animation: aparece .15s ease-out; }
