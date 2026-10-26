@@ -23,9 +23,15 @@ from app.domain.modelos import (
     Consulta,
     Entidad,
     EstadoCita,
+    EstadoFactura,
+    EstadoIngreso,
     EstadoRecordatorio,
+    Factura,
+    Ingreso,
     NotaAclaratoria,
     Paciente,
+    Procedimiento,
+    ProcedimientoRealizado,
     Recordatorio,
     RegistroAuditoria,
     Usuario,
@@ -34,7 +40,11 @@ from app.repositories.interfaces import (
     IAuditoriaRepository,
     ICitaRepository,
     IConsultaRepository,
+    IFacturaRepository,
+    IIngresoRepository,
     IPacienteRepository,
+    IProcedimientoRealizadoRepository,
+    IProcedimientoRepository,
     IRecordatorioRepository,
     IRepository,
     IUsuarioRepository,
@@ -347,3 +357,146 @@ class MemoryRecordatorioRepository(MemoryRepository[Recordatorio], IRecordatorio
                 and r.fecha_envio is not None
                 and r.fecha_envio <= hasta
             ]
+
+
+class MemoryProcedimientoRepository(MemoryRepository[Procedimiento], IProcedimientoRepository):
+    def obtener_por_codigo(self, codigo: str) -> Optional[Procedimiento]:
+        buscado = codigo.strip().upper()
+        with self._lock:
+            for item in self._items:
+                if item.activo and item.codigo.upper() == buscado:
+                    return copy.deepcopy(item)
+        return None
+
+
+class MemoryIngresoRepository(MemoryRepository[Ingreso], IIngresoRepository):
+    def __init__(self, auditoria: IAuditoriaRepository) -> None:
+        super().__init__()
+        self._auditoria = auditoria
+
+    def agregar(self, entidad: Ingreso) -> Ingreso:
+        nuevo = super().agregar(entidad)
+        _auditar(self._auditoria, "Ingreso", "CREACION", nuevo.id)
+        return nuevo
+
+    def obtener_por_id(self, id: int) -> Optional[Ingreso]:
+        ingreso = super().obtener_por_id(id)
+        if ingreso is not None:
+            _auditar(self._auditoria, "Ingreso", "LECTURA", id)
+        return ingreso
+
+    def actualizar(self, entidad: Ingreso) -> Ingreso:
+        actualizado = super().actualizar(entidad)
+        _auditar(self._auditoria, "Ingreso", "MODIFICACION", actualizado.id)
+        return actualizado
+
+    def obtener_abierto_por_paciente(self, paciente_id: int) -> Optional[Ingreso]:
+        with self._lock:
+            for item in self._items:
+                if item.activo and item.paciente_id == paciente_id and item.estado == EstadoIngreso.ABIERTO:
+                    return copy.deepcopy(item)
+        return None
+
+    def buscar(
+        self,
+        estado: Optional[EstadoIngreso] = None,
+        medico_id: Optional[int] = None,
+        paciente_id: Optional[int] = None,
+    ) -> list[Ingreso]:
+        with self._lock:
+            encontrados = [
+                copy.deepcopy(i)
+                for i in self._items
+                if i.activo
+                and (estado is None or i.estado == estado)
+                and (medico_id is None or i.medico_id == medico_id)
+                and (paciente_id is None or i.paciente_id == paciente_id)
+            ]
+        encontrados.sort(key=lambda i: (i.fecha_ingreso or datetime.min, i.id), reverse=True)
+        _auditar(self._auditoria, "Ingreso", "LISTADO")
+        return encontrados
+
+
+class MemoryProcedimientoRealizadoRepository(
+    MemoryRepository[ProcedimientoRealizado], IProcedimientoRealizadoRepository
+):
+    """Los procedimientos son parte de la historia clínica: cada acceso queda en la bitácora."""
+
+    def __init__(self, auditoria: IAuditoriaRepository) -> None:
+        super().__init__()
+        self._auditoria = auditoria
+
+    def agregar(self, entidad: ProcedimientoRealizado) -> ProcedimientoRealizado:
+        nuevo = super().agregar(entidad)
+        _auditar(self._auditoria, "Procedimiento", "CREACION", nuevo.id)
+        return nuevo
+
+    def obtener_por_id(self, id: int) -> Optional[ProcedimientoRealizado]:
+        procedimiento = super().obtener_por_id(id)
+        if procedimiento is not None:
+            _auditar(self._auditoria, "Procedimiento", "LECTURA", id)
+        return procedimiento
+
+    def actualizar(self, entidad: ProcedimientoRealizado) -> ProcedimientoRealizado:
+        actualizado = super().actualizar(entidad)
+        _auditar(self._auditoria, "Procedimiento", "MODIFICACION", actualizado.id)
+        return actualizado
+
+    def obtener_por_ingreso(self, ingreso_id: int) -> list[ProcedimientoRealizado]:
+        with self._lock:
+            encontrados = [
+                copy.deepcopy(p) for p in self._items if p.activo and p.ingreso_id == ingreso_id
+            ]
+        encontrados.sort(key=lambda p: (p.fecha_hora or datetime.min, p.id))
+        _auditar(self._auditoria, "Procedimiento", "LECTURA_MULTIPLE", ingreso_id)
+        return encontrados
+
+    def obtener_por_paciente(self, paciente_id: int) -> list[ProcedimientoRealizado]:
+        with self._lock:
+            encontrados = [
+                copy.deepcopy(p) for p in self._items if p.activo and p.paciente_id == paciente_id
+            ]
+        encontrados.sort(key=lambda p: (p.fecha_hora or datetime.min, p.id), reverse=True)
+        _auditar(self._auditoria, "HistoriaClinica", "LECTURA", paciente_id)
+        return encontrados
+
+
+class MemoryFacturaRepository(MemoryRepository[Factura], IFacturaRepository):
+    def __init__(self, auditoria: IAuditoriaRepository) -> None:
+        super().__init__()
+        self._auditoria = auditoria
+
+    def agregar(self, entidad: Factura) -> Factura:
+        nueva = super().agregar(entidad)
+        _auditar(self._auditoria, "Factura", "CREACION", nueva.id)
+        return nueva
+
+    def obtener_por_id(self, id: int) -> Optional[Factura]:
+        factura = super().obtener_por_id(id)
+        if factura is not None:
+            _auditar(self._auditoria, "Factura", "LECTURA", id)
+        return factura
+
+    def actualizar(self, entidad: Factura) -> Factura:
+        actualizada = super().actualizar(entidad)
+        _auditar(self._auditoria, "Factura", "MODIFICACION", actualizada.id)
+        return actualizada
+
+    def buscar(
+        self,
+        estado: Optional[EstadoFactura] = None,
+        paciente_id: Optional[int] = None,
+        ingreso_id: Optional[int] = None,
+    ) -> list[Factura]:
+        with self._lock:
+            encontradas = [
+                copy.deepcopy(f)
+                for f in self._items
+                if f.activo
+                and (estado is None or f.estado == estado)
+                and (paciente_id is None or f.paciente_id == paciente_id)
+                and (ingreso_id is None or f.ingreso_id == ingreso_id)
+            ]
+        encontradas.sort(key=lambda f: f.id, reverse=True)
+        _auditar(self._auditoria, "Factura", "LISTADO")
+        return encontradas
