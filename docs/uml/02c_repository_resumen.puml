@@ -1,0 +1,65 @@
+@startuml 02c_repository_resumen
+' Vista resumida del patrón Repository (se muestran 3 de los 6 repositorios; los demás siguen el mismo esquema)
+top to bottom direction
+skinparam monochrome true
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontSize 12
+skinparam classAttributeIconSize 0
+skinparam nodesep 40
+skinparam ranksep 55
+skinparam wrapWidth 260
+
+title Patrón Repository: los servicios dependen de interfaces\nSistema de Gestión "Salud Integral"
+
+class PacienteService <<servicio>>
+class CitaService <<servicio>>
+class ConsultaService <<servicio>>
+
+interface IPacienteRepository {
+  + obtenerPorDocumento()
+  + buscar(texto)
+}
+interface ICitaRepository {
+  + existeCruce()
+  + obtenerPorMedicoYFecha()
+}
+interface IConsultaRepository {
+  + obtenerPorPaciente()
+  + agregarNota()
+}
+
+class MemoryPacienteRepository <<implementación>>
+class MemoryCitaRepository <<implementación>>
+class MemoryConsultaRepository <<implementación>>
+
+class "Listas de objetos en memoria" as ALM <<almacén>>
+interface IAuditoriaRepository
+
+PacienteService -down.> IPacienteRepository
+CitaService -down.> ICitaRepository
+ConsultaService -down.> IConsultaRepository
+
+IPacienteRepository <|.down. MemoryPacienteRepository
+ICitaRepository <|.down. MemoryCitaRepository
+IConsultaRepository <|.down. MemoryConsultaRepository
+
+MemoryPacienteRepository -down-> ALM
+MemoryCitaRepository -down-> ALM
+MemoryConsultaRepository -down-> ALM
+
+MemoryConsultaRepository .right.> IAuditoriaRepository : audita
+MemoryPacienteRepository .[hidden]right. MemoryCitaRepository
+
+note right of IConsultaRepository
+  Las tres interfaces extienden
+  IRepository<T>: agregar, obtenerPorId,
+  actualizar, desactivar (borrado lógico)
+  y listar.
+end note
+
+note bottom of ALM
+  En producción se reemplaza por clases Sql...Repository
+  sin cambiar los servicios.
+end note
+@enduml
