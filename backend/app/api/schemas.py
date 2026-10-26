@@ -4,7 +4,15 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.domain.modelos import EstadoCita, EstadoRecordatorio, Rol
+from app.domain.modelos import (
+    EstadoCita,
+    EstadoFactura,
+    EstadoIngreso,
+    EstadoRecordatorio,
+    MetodoPago,
+    Rol,
+    TipoIngreso,
+)
 
 TipoDocumento = Literal["CC", "TI", "CE", "PA", "RC"]
 
@@ -203,6 +211,126 @@ class ConsultaOut(Salida):
     observaciones: str
     cerrada: bool
     notas: list[NotaOut] = []
+
+
+# ----------------------------------------------------------------------- catálogo, ingresos y facturación
+
+
+class ProcedimientoCatalogoIn(BaseModel):
+    codigo: str = Field(max_length=12)
+    nombre: str = Field(max_length=120)
+    tarifa: int = Field(description="Valor en pesos, sin decimales")
+
+
+class ProcedimientoCatalogoUpdate(BaseModel):
+    nombre: Optional[str] = Field(None, max_length=120)
+    tarifa: Optional[int] = None
+
+
+class ProcedimientoCatalogoOut(Salida):
+    id: int
+    codigo: str
+    nombre: str
+    tarifa: int
+
+
+class IngresoIn(BaseModel):
+    paciente_id: int
+    medico_id: int
+    tipo: TipoIngreso = TipoIngreso.AMBULATORIO
+    motivo: str = Field(max_length=500)
+
+
+class EgresoIn(BaseModel):
+    resumen: str = Field("", max_length=3000)
+
+
+class RealizadoIn(BaseModel):
+    procedimiento_id: int
+    cantidad: int = Field(1, ge=1, le=99)
+    observaciones: str = Field("", max_length=2000)
+
+
+class AnulacionIn(BaseModel):
+    motivo: str = Field(max_length=300)
+
+
+class RealizadoOut(Salida):
+    id: int
+    ingreso_id: int
+    paciente_id: int
+    medico_id: int
+    medico_nombre: str = ""
+    codigo: str
+    nombre: str
+    cantidad: int
+    valor_unitario: int
+    subtotal: int
+    fecha_hora: Optional[datetime]
+    observaciones: Optional[str] = None  # dato clínico: solo lo ve el médico
+    anulado: bool
+    motivo_anulacion: str
+    factura_id: Optional[int] = None
+    factura_numero: Optional[str] = None
+
+
+class IngresoOut(Salida):
+    id: int
+    paciente_id: int
+    paciente_nombre: str = ""
+    paciente_documento: str = ""
+    medico_id: int
+    medico_nombre: str = ""
+    tipo: TipoIngreso
+    motivo: str
+    fecha_ingreso: Optional[datetime]
+    estado: EstadoIngreso
+    fecha_egreso: Optional[datetime]
+    resumen_egreso: Optional[str] = None  # dato clínico: solo lo ve el médico
+    n_procedimientos: int = 0
+    total: int = 0
+    pendiente_facturar: int = 0
+
+
+class IngresoDetalleOut(IngresoOut):
+    procedimientos: list[RealizadoOut] = []
+
+
+class FacturaIn(BaseModel):
+    ingreso_id: int
+    procedimiento_ids: Optional[list[int]] = Field(
+        None, description="Procedimientos a facturar; si se omite, todos los pendientes"
+    )
+
+
+class PagoIn(BaseModel):
+    metodo_pago: MetodoPago
+
+
+class LineaFacturaOut(Salida):
+    procedimiento_realizado_id: int
+    codigo: str
+    descripcion: str
+    cantidad: int
+    valor_unitario: int
+    subtotal: int
+
+
+class FacturaOut(Salida):
+    id: int
+    numero: str
+    ingreso_id: int
+    paciente_id: int
+    paciente_nombre: str = ""
+    paciente_documento: str = ""
+    fecha: Optional[datetime]
+    estado: EstadoFactura
+    lineas: list[LineaFacturaOut]
+    total: int
+    metodo_pago: Optional[MetodoPago] = None
+    fecha_pago: Optional[datetime] = None
+    motivo_anulacion: str = ""
+    emitida_por: str = ""
 
 
 # ----------------------------------------------------------------------- auditoría y recordatorios
