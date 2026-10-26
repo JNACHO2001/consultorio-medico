@@ -10,6 +10,8 @@ Prototipo de un sistema web para centralizar y proteger la información de pacie
 
 > Prototipo académico. Los pacientes y usuarios de demostración son ficticios. Los datos se pierden al reiniciar el servidor.
 
+**Aplicación en línea:** <https://consultorio-medico-pty2.onrender.com>. En el plan gratuito el servicio se suspende si no se usa; la primera visita puede tardar unos segundos.
+
 ## Cómo ejecutarlo
 
 Requisitos: Python 3.12 o superior.
