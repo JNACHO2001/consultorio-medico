@@ -1,13 +1,15 @@
 import { api, ErrorApi } from "../api.js";
 import {
-  alerta, areaTexto, aviso, campo, datosDe, debounce, edad, entrada, fechaHora, h, abrirDialogo, seleccion, soloFecha,
+  alerta, areaTexto, aviso, campo, datosDe, debounce, edad, entrada, fechaHora, h, abrirDialogo, pesos, seleccion, sello, soloFecha,
+  TIPOS_INGRESO,
 } from "../ui.js";
+import { abrirAdmision } from "./admision.js";
 
 const TIPOS = [["CC", "Cédula de ciudadanía"], ["TI", "Tarjeta de identidad"], ["CE", "Cédula de extranjería"], ["PA", "Pasaporte"], ["RC", "Registro civil"]];
 
 export async function montarPacientes(raiz, { usuario }) {
   const esRecepcion = usuario.rol === "RECEPCION";
-  const buscador = entrada("q", { tipo: "search", placeholder: "Documento o nombre", "aria-label": "Buscar paciente" });
+  const buscador = entrada("q", { tipo: "search", placeholder: "Documento o nombre", "aria-label": "Filtrar pacientes" });
   const lista = h("ul", { class: "resultados" });
   const estadoLista = h("div", { "aria-live": "polite" });
   const detalle = h("div");
@@ -17,14 +19,13 @@ export async function montarPacientes(raiz, { usuario }) {
     const q = buscador.value.trim();
     seleccionado = null;
     detalle.replaceChildren(vacio("Elija un paciente de la lista para ver su información."));
-    if (!q) {
-      lista.replaceChildren();
-      estadoLista.replaceChildren(h("p", { class: "suave" }, "Escriba un documento o parte del nombre."));
-      return;
-    }
     try {
+      // Sin texto se listan todos los pacientes.
       const resultados = await api.get("/api/pacientes", { q });
-      estadoLista.replaceChildren(resultados.length ? "" : h("p", { class: "suave" }, "No hay pacientes con ese dato."));
+      estadoLista.replaceChildren(h("p", { class: "suave pequeno" },
+        resultados.length
+          ? (q ? `${resultados.length} ${resultados.length === 1 ? "resultado" : "resultados"}` : `${resultados.length} ${resultados.length === 1 ? "paciente registrado" : "pacientes registrados"}`)
+          : "No hay pacientes con ese dato."));
       lista.replaceChildren(...resultados.map((p) =>
         h("li", {}, h("button", { type: "button", "aria-pressed": "false", onclick: (e) => elegir(p.id, e.currentTarget) },
           h("b", {}, p.nombre_completo),
@@ -46,6 +47,7 @@ export async function montarPacientes(raiz, { usuario }) {
       const p = await api.get(`/api/pacientes/${id}`);
       if (seleccionado !== id) return;
       detalle.replaceChildren(fichaPaciente(p));
+      detalle.append(await panelIngresos(id));
       if (usuario.rol === "MEDICO") detalle.append(await historialClinico(id));
     } catch (error) {
       detalle.replaceChildren(alerta(error));
@@ -57,7 +59,11 @@ export async function montarPacientes(raiz, { usuario }) {
     return h("section", { class: "panel" },
       h("div", { class: "barra", style: "justify-content:space-between;align-items:start" },
         h("div", {}, h("h2", {}, p.nombre_completo), h("p", { class: "suave num" }, `${p.tipo_documento} ${p.numero_documento}`)),
-        esRecepcion ? h("button", { class: "btn", type: "button", onclick: () => formularioPaciente(p) }, "Editar datos") : null),
+        esRecepcion
+          ? h("div", { class: "acciones", style: "margin:0" },
+            h("button", { class: "btn btn-primario", type: "button", onclick: () => abrirAdmision({ paciente: p, alCrear: (i) => { window.location.hash = `#/ingreso/${i.id}`; } }) }, "Ingresar paciente"),
+            h("button", { class: "btn", type: "button", onclick: () => formularioPaciente(p) }, "Editar datos"))
+          : null),
       p.alergias ? h("div", { class: "alergias" }, h("b", {}, "Alergias: "), p.alergias) : null,
       h("dl", { class: "ficha" },
         dato("Fecha de nacimiento", p.fecha_nacimiento ? `${soloFecha(p.fecha_nacimiento)} (${edad(p.fecha_nacimiento)})` : ""),
@@ -70,6 +76,31 @@ export async function montarPacientes(raiz, { usuario }) {
               h("td", { class: "fecha" }, fechaHora(c.fecha)), h("td", {}, c.campo), h("td", {}, c.valor_anterior || "—"), h("td", {}, c.valor_nuevo || "—")))))))
         : null
     );
+  }
+
+  async function panelIngresos(id) {
+    const esMedico = usuario.rol === "MEDICO";
+    const panel = h("section", { class: "panel" }, h("h3", {}, esMedico ? "Ingresos y procedimientos" : "Ingresos y cuentas"));
+    try {
+      const ingresos = await api.get(`/api/pacientes/${id}/ingresos`);
+      if (!ingresos.length) panel.append(vacio("Este paciente no tiene ingresos."));
+      for (const i of ingresos) {
+        panel.append(h("article", { class: "consulta-previa" },
+          h("h3", {}, fechaHora(i.fecha_ingreso), " · ", TIPOS_INGRESO[i.tipo], " · ", i.medico_nombre, " ", sello(i.estado)),
+          h("p", { class: "suave pequeno" }, i.motivo),
+          i.procedimientos.length
+            ? h("ul", { class: "lista-simple" }, i.procedimientos.map((p) => h("li", {},
+              h("span", { class: p.anulado ? "tachada" : "" }, `${p.cantidad} × ${p.nombre}`),
+              p.anulado ? " (anulado)" : h("span", { class: "suave num" }, ` · ${pesos(p.subtotal)}`),
+              p.observaciones ? h("div", { class: "suave pequeno" }, p.observaciones) : null)))
+            : h("p", { class: "suave pequeno" }, "Sin procedimientos registrados."),
+          h("p", { class: "pequeno" }, h("b", {}, `Total ${pesos(i.total)}`), i.pendiente_facturar ? ` · por facturar ${pesos(i.pendiente_facturar)}` : "", " · ",
+            h("a", { href: `#/ingreso/${i.id}` }, "Abrir cuenta"))));
+      }
+    } catch (error) {
+      panel.append(alerta(error));
+    }
+    return panel;
   }
 
   async function historialClinico(id) {
@@ -156,14 +187,13 @@ export async function montarPacientes(raiz, { usuario }) {
   raiz.append(
     h("header", { class: "encabezado" },
       h("div", {}, h("h1", {}, "Pacientes"),
-        h("p", {}, esRecepcion ? "Busque por documento o nombre, o registre un paciente nuevo." : "Busque a un paciente para ver su historia clínica.")),
+        h("p", {}, esRecepcion ? "Todos los pacientes registrados. Filtre por documento o nombre, registre uno nuevo o ingréselo." : "Todos los pacientes registrados. Elija uno para ver su historia clínica.")),
       esRecepcion ? h("button", { class: "btn btn-primario", type: "button", onclick: () => formularioPaciente(null) }, "Registrar paciente") : null),
     h("div", { class: "dos-columnas" },
-      h("section", { class: "panel" }, campo("Buscar paciente", buscador), estadoLista, lista),
+      h("section", { class: "panel" }, campo("Filtrar pacientes", buscador), estadoLista, lista),
       detalle)
   );
-  detalle.append(vacio("Elija un paciente de la lista para ver su información."));
-  estadoLista.append(h("p", { class: "suave" }, "Escriba un documento o parte del nombre."));
+  await buscar();
 }
 
 export function vacio(texto) {
