@@ -134,6 +134,8 @@ No implementado (queda como trabajo futuro):
 
 ## Documentación
 
+El informe técnico está en [`docs/informe/Informe_Salud_Integral.pdf`](docs/informe/Informe_Salud_Integral.pdf).
+
 Los diagramas UML (casos de uso, clases de dominio, clases con el patrón Repository, secuencia de agendar una cita y despliegue) están en [`docs/uml/`](docs/uml/README.md) con su descripción y justificación.
 
 ## Despliegue en la nube
