@@ -15,8 +15,14 @@ from app.domain.modelos import (
     Cita,
     Consulta,
     EstadoCita,
+    EstadoFactura,
+    EstadoIngreso,
+    Factura,
+    Ingreso,
     NotaAclaratoria,
     Paciente,
+    Procedimiento,
+    ProcedimientoRealizado,
     Recordatorio,
     RegistroAuditoria,
     Usuario,
@@ -98,6 +104,48 @@ class IRecordatorioRepository(IRepository[Recordatorio]):
 
     @abstractmethod
     def obtener_pendientes(self, hasta: datetime) -> list[Recordatorio]: ...
+
+
+class IProcedimientoRepository(IRepository[Procedimiento]):
+    """Catálogo de procedimientos y tarifas."""
+
+    @abstractmethod
+    def obtener_por_codigo(self, codigo: str) -> Optional[Procedimiento]: ...
+
+
+class IIngresoRepository(IRepository[Ingreso]):
+    @abstractmethod
+    def obtener_abierto_por_paciente(self, paciente_id: int) -> Optional[Ingreso]: ...
+
+    @abstractmethod
+    def buscar(
+        self,
+        estado: Optional[EstadoIngreso] = None,
+        medico_id: Optional[int] = None,
+        paciente_id: Optional[int] = None,
+    ) -> list[Ingreso]:
+        """Ingresos que cumplen los filtros, del más reciente al más antiguo."""
+
+
+class IProcedimientoRealizadoRepository(IRepository[ProcedimientoRealizado]):
+    @abstractmethod
+    def obtener_por_ingreso(self, ingreso_id: int) -> list[ProcedimientoRealizado]:
+        """Procedimientos del ingreso (incluidos los anulados), en orden cronológico."""
+
+    @abstractmethod
+    def obtener_por_paciente(self, paciente_id: int) -> list[ProcedimientoRealizado]:
+        """Procedimientos del paciente en todos sus ingresos, del más reciente al más antiguo."""
+
+
+class IFacturaRepository(IRepository[Factura]):
+    @abstractmethod
+    def buscar(
+        self,
+        estado: Optional[EstadoFactura] = None,
+        paciente_id: Optional[int] = None,
+        ingreso_id: Optional[int] = None,
+    ) -> list[Factura]:
+        """Facturas que cumplen los filtros, de la más reciente a la más antigua."""
 
 
 class IAuditoriaRepository(ABC):
