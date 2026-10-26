@@ -40,7 +40,19 @@ export function fechaLarga(iso) {
 
 export const horaCorta = (isoFechaHora) => isoFechaHora.slice(11, 16);
 export const soloFecha = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : "—");
-export const fechaHora = (iso) => `${soloFecha(iso)} ${horaCorta(iso)}`;
+
+// Si el servidor envía una marca con zona (Z o +00:00) se convierte a la hora del consultorio;
+// si viene sin zona, ya está en hora local y solo se da formato.
+export function fechaHora(iso) {
+  if (/(Z|[+-]\d\d:\d\d)$/.test(iso)) {
+    const partes = new Intl.DateTimeFormat("en-GB", {
+      timeZone: ZONA, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(new Date(iso));
+    const v = Object.fromEntries(partes.map((p) => [p.type, p.value]));
+    return `${v.day}/${v.month}/${v.year} ${v.hour === "24" ? "00" : v.hour}:${v.minute}`;
+  }
+  return `${soloFecha(iso)} ${horaCorta(iso)}`;
+}
 
 export function edad(fechaNacimiento) {
   if (!fechaNacimiento) return "";
