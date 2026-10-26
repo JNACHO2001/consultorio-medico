@@ -109,6 +109,13 @@ class PacienteService:
             raise ReglaNegocio("Ingrese un documento o un nombre para buscar.")
         return self._pacientes.buscar(criterio)
 
+    def listar_pacientes(self) -> list[Paciente]:
+        """Todos los pacientes activos, ordenados por apellido y nombre."""
+        return sorted(
+            self._pacientes.listar(),
+            key=lambda p: (p.apellidos.lower(), p.nombres.lower()),
+        )
+
     def obtener_paciente(self, paciente_id: int) -> Paciente:
         paciente = self._pacientes.obtener_por_id(paciente_id)
         if paciente is None:
