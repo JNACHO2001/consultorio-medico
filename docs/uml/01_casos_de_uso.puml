@@ -30,6 +30,10 @@ rectangle "Sistema de Gestión – Salud Integral" {
   usecase "CU-09\nAdjuntar documento\nclínico" as CU09
   usecase "CU-10\nEnviar recordatorio\nde cita" as CU10
   usecase "CU-01\nIniciar sesión" as CU01
+  usecase "CU-13\nIngresar paciente" as CU13
+  usecase "CU-14\nRegistrar procedimiento\nrealizado" as CU14
+  usecase "CU-15\nFacturar y cobrar\nprocedimientos" as CU15
+  usecase "CU-16\nGestionar catálogo\ny tarifas" as CU16
 }
 
 actor "Servicio de\nnotificaciones" as NOT <<sistema externo>>
@@ -39,7 +43,10 @@ REC --> CU04
 REC --> CU05
 REC --> CU06
 REC --> CU03
+REC --> CU13
+REC --> CU15
 
+MED --> CU14
 MED --> CU06
 MED --> CU07
 MED --> CU03
@@ -47,13 +54,21 @@ MED --> CU08
 
 ADM --> CU11
 ADM --> CU12
+ADM --> CU16
 
 CU04 ..> CU03 : <<include>>
 CU04 ..> CU10 : <<include>>
 CU07 ..> CU08 : <<include>>
 CU09 .up.> CU07 : <<extend>>
+CU13 ..> CU03 : <<include>>
+CU14 ..> CU08 : <<extend>>
 
 CU10 <-- NOT
+
+note right of CU15
+  El administrador solo consulta las facturas.
+  Cada procedimiento se factura una sola vez.
+end note
 
 note right of CU01
   Todos los casos de uso, excepto CU-01 y CU-10,
