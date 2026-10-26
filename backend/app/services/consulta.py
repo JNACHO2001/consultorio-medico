@@ -101,6 +101,18 @@ class ConsultaService:
     def obtener_consulta(self, consulta_id: int) -> Consulta:
         return self._obtener(consulta_id)
 
+    def obtener_por_cita(self, cita_id: int, medico: Usuario) -> Consulta:
+        """Consulta ya registrada para una cita del médico (NoEncontrado si aún no hay)."""
+        cita = self._citas.obtener_por_id(cita_id)
+        if cita is None:
+            raise NoEncontrado("La cita no existe.")
+        if cita.medico_id != medico.id:
+            raise Prohibido("La cita pertenece a otro médico.")
+        consulta = self._consultas.obtener_por_cita(cita_id)
+        if consulta is None:
+            raise NoEncontrado("La cita aún no tiene una consulta registrada.")
+        return consulta
+
     # ------------------------------------------------------------------ internos
 
     def _obtener(self, consulta_id: int) -> Consulta:
