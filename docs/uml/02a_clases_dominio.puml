@@ -81,6 +81,52 @@ class NotaAclaratoria {
   - fecha : DateTime
 }
 
+class Ingreso {
+  - id : Long
+  - fechaIngreso : DateTime
+  - tipo : TipoIngreso
+  - motivo : String
+  - estado : EstadoIngreso
+  - fechaEgreso : DateTime
+  - resumenEgreso : String
+}
+
+class Procedimiento <<catálogo>> {
+  - codigo : String
+  - nombre : String
+  - tarifa : Entero (pesos)
+}
+
+class ProcedimientoRealizado {
+  - id : Long
+  - fechaHora : DateTime
+  - cantidad : Entero
+  - valorUnitario : Entero (pesos)
+  - observaciones : String
+  - anulado : Boolean
+}
+
+class Factura {
+  - numero : String
+  - fecha : DateTime
+  - estado : EstadoFactura
+  - metodoPago : MetodoPago
+  - fechaPago : DateTime
+  - motivoAnulacion : String
+}
+
+class LineaFactura {
+  - descripcion : String
+  - cantidad : Entero
+  - valorUnitario : Entero (pesos)
+}
+
+enum EstadoFactura {
+  EMITIDA
+  PAGADA
+  ANULADA
+}
+
 class DocumentoAdjunto {
   - nombreArchivo : String
   - tipo : String
@@ -110,11 +156,27 @@ Cita --> EstadoCita
 Consulta "0..1" --> "1" Cita : surge de
 Consulta "*" --> "1" Medico : registra
 
+Paciente "1" -- "*" Ingreso : es admitido en
+Ingreso "*" --> "1" Medico : tratante
+Ingreso "1" *-- "*" ProcedimientoRealizado : cuenta
+HistoriaClinica "1" o-- "*" ProcedimientoRealizado : incluye
+ProcedimientoRealizado "*" --> "1" Procedimiento : copia código y valor
+ProcedimientoRealizado "*" --> "0..1" Factura : se factura en
+Factura "*" --> "1" Ingreso
+Factura "1" *-- "1..*" LineaFactura
+Factura --> EstadoFactura
+
 RegistroAuditoria "*" --> "1" Usuario : realizado por
 
 note bottom of Consulta
   Una consulta cerrada no se modifica:
   solo se corrige con NotaAclaratoria (RN-04).
+end note
+
+note bottom of ProcedimientoRealizado
+  El valor se copia del catálogo al registrarlo:
+  un cambio de tarifa no altera lo ya realizado (RN-10).
+  Un procedimiento se factura una sola vez (RN-12).
 end note
 
 note bottom of Paciente
