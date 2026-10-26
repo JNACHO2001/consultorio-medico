@@ -41,12 +41,30 @@ PACIENTES_DEMO = [
          telefono="3000000005", correo="ana.demo@example.com", eps="EPS Demo", alergias=""),
 ]
 
+# Catálogo de procedimientos con tarifas ficticias (pesos colombianos).
+CATALOGO_DEMO = [
+    ("CON-GEN", "Consulta de medicina general", 60000),
+    ("CON-ESP", "Consulta de medicina interna", 95000),
+    ("CUR-SIM", "Curación simple", 25000),
+    ("SUT-SIM", "Sutura de herida simple", 85000),
+    ("INY-IM", "Aplicación de inyectología", 12000),
+    ("NEB-001", "Nebulización", 30000),
+    ("ECG-001", "Electrocardiograma", 55000),
+    ("LAB-HEM", "Hemograma completo", 28000),
+    ("LAB-GLU", "Glicemia en ayunas", 15000),
+    ("RX-TOR", "Radiografía de tórax", 70000),
+    ("OBS-HOR", "Observación por hora", 40000),
+]
+
 
 def sembrar_datos_demo(c: Contenedor) -> None:
     for nombre_usuario, nombre, rol, especialidad, registro in USUARIOS_DEMO:
         c.usuarios.crear_usuario(
             nombre_usuario, c.config.contrasena_demo, nombre, rol, especialidad, registro
         )
+
+    for codigo, nombre, tarifa in CATALOGO_DEMO:
+        c.catalogo.crear(codigo, nombre, tarifa)
 
     pacientes = [c.pacientes.registrar_paciente(**datos) for datos in PACIENTES_DEMO]
 
