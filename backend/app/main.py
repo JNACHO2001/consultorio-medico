@@ -17,7 +17,20 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 
 from app.api.errores import registrar_manejadores
-from app.api.routers import auditoria, auth, citas, consultas, medicos, pacientes, recordatorios, salud, usuarios
+from app.api.routers import (
+    auditoria,
+    auth,
+    citas,
+    consultas,
+    facturas,
+    ingresos,
+    medicos,
+    pacientes,
+    procedimientos,
+    recordatorios,
+    salud,
+    usuarios,
+)
 from app.config import Configuracion, cargar_configuracion
 from app.container import Contenedor, crear_contenedor
 from app.core.tiempo import ahora_local
@@ -85,6 +98,9 @@ def crear_app(config: Optional[Configuracion] = None) -> FastAPI:
         medicos.router,
         citas.router,
         consultas.router,
+        procedimientos.router,
+        ingresos.router,
+        facturas.router,
         usuarios.router,
         auditoria.router,
         recordatorios.router,
