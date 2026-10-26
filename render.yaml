@@ -1,0 +1,12 @@
+# Despliegue en Render (plan gratuito): conectar este repositorio como "Blueprint".
+services:
+  - type: web
+    name: consultorio-medico
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SEMBRAR_DATOS_DEMO
+        value: "true"
