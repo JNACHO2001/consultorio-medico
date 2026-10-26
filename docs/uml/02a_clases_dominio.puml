@@ -7,7 +7,9 @@ skinparam shadowing false
 skinparam dpi 150
 skinparam defaultFontSize 12
 skinparam classAttributeIconSize 0
-skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 35
+skinparam wrapWidth 220
 
 title Diagrama de clases (1 de 2): modelo de dominio\nSistema de Gestión "Salud Integral"
 
