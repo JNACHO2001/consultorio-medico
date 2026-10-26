@@ -6,6 +6,7 @@ Prototipo de un sistema web para centralizar y proteger la información de pacie
 
 - **Backend:** Python 3.12+ con FastAPI.
 - **Frontend:** JavaScript puro (módulos ES), sin paso de compilación. FastAPI lo sirve en la raíz (`/`).
+- **Módulo de ingresos y facturación (estilo "mini Servinte"):** lista de todos los pacientes, ingreso del paciente, procedimientos realizados que quedan en su historia clínica y facturación por procedimiento.
 - **Patrón principal:** Repository. Los datos viven en **listas de objetos en memoria**, accedidas solo a través de interfaces de repositorio.
 
 > Prototipo académico. Los pacientes y usuarios de demostración son ficticios. Los datos se pierden al reiniciar el servidor.
@@ -39,11 +40,13 @@ La contraseña de todos es `Salud2026*`.
 
 | Usuario | Rol | Qué puede hacer |
 |---|---|---|
-| `recepcion1`, `recepcion2` | Recepción | Registrar y buscar pacientes, agendar, reprogramar y cancelar citas. No ve información clínica. |
-| `dr.perez`, `dra.gomez`, `dr.rojas`, `dra.torres` | Médico | Ver su agenda, atender citas, registrar y cerrar consultas, agregar notas aclaratorias, ver historias clínicas. |
-| `admin` | Administrador | Crear y desactivar usuarios, consultar la bitácora de auditoría, ver y procesar recordatorios. |
+| `recepcion1`, `recepcion2` | Recepción | Listar y registrar pacientes, agendar citas, **ingresar pacientes, facturar y cobrar procedimientos**. No ve información clínica. |
+| `dr.perez`, `dra.gomez`, `dr.rojas`, `dra.torres` | Médico | Ver su agenda, atender citas, registrar y cerrar consultas, agregar notas aclaratorias, ver historias clínicas, **registrar procedimientos a sus pacientes ingresados y dar el egreso**. |
+| `admin` | Administrador | Crear y desactivar usuarios, consultar la bitácora de auditoría, ver y procesar recordatorios, gestionar el catálogo de procedimientos y tarifas, consultar facturas. |
 
-Una prueba rápida: entre como `recepcion1`, vaya al día siguiente y agende una cita; luego entre como `dr.perez`, abra su agenda del día siguiente y atienda esa cita.
+Una prueba rápida de citas: entre como `recepcion1`, vaya al día siguiente y agende una cita; luego entre como `dr.perez`, abra su agenda del día siguiente y atienda esa cita.
+
+Prueba rápida de ingresos y facturación: como `recepcion1` abra *Pacientes*, elija uno y pulse *Ingresar paciente* (médico `Dr. Andrés Pérez`); salga y entre como `dr.perez`, abra *Ingresos* → *Abrir cuenta* y use *Registrar procedimiento* varias veces; vuelva como `recepcion1`, abra la cuenta del ingreso, pulse *Facturar pendientes*, genere la factura y *Registre el pago*.
 
 ### Pruebas automáticas
 
@@ -53,7 +56,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Son 57 pruebas: contrato de los repositorios, reglas de negocio (documento único, cruce de citas, consulta cerrada), permisos por rol, sesiones y bitácora.
+Son 82 pruebas: contrato de los repositorios, reglas de negocio (documento único, cruce de citas, consulta cerrada, un ingreso abierto por paciente, valor congelado, factura única por procedimiento), permisos por rol, sesiones y bitácora.
 
 ### Configuración
 
@@ -98,7 +101,7 @@ Los servicios dependen de interfaces (`IPacienteRepository`, `ICitaRepository`�
 
 ## Alcance del prototipo
 
-Implementado: registro, búsqueda y actualización de pacientes; agenda con horarios libres, cruce de citas, reprogramación y cancelación; consultas médicas con cierre y notas aclaratorias; historia clínica; usuarios y roles; bitácora de auditoría; recordatorios simulados.
+Implementado: registro, listado completo, búsqueda y actualización de pacientes; ingreso (admisión) y egreso; procedimientos realizados con catálogo y tarifas, que quedan en la historia clínica; facturación por procedimiento con pago y anulación; agenda con horarios libres, cruce de citas, reprogramación y cancelación; consultas médicas con cierre y notas aclaratorias; historia clínica; usuarios y roles; bitácora de auditoría; recordatorios simulados.
 
 No implementado (queda como trabajo futuro):
 
