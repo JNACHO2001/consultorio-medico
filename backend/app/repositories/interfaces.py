@@ -133,6 +133,10 @@ class IProcedimientoRealizadoRepository(IRepository[ProcedimientoRealizado]):
         """Procedimientos del ingreso (incluidos los anulados), en orden cronológico."""
 
     @abstractmethod
+    def obtener_por_ingresos(self, ingreso_ids: list[int]) -> list[ProcedimientoRealizado]:
+        """Procedimientos de varios ingresos en una sola consulta (para listados)."""
+
+    @abstractmethod
     def obtener_por_paciente(self, paciente_id: int) -> list[ProcedimientoRealizado]:
         """Procedimientos del paciente en todos sus ingresos, del más reciente al más antiguo."""
 
