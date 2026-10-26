@@ -1,0 +1,258 @@
+/* Salud Integral – hoja de estilos del prototipo.
+   Paleta: papel clínico, tinta azul-verdosa y pino profundo como color de marca. */
+:root {
+  --papel: #ecf0ee;
+  --superficie: #ffffff;
+  --tinta: #13262b;
+  --tinta-suave: #4a5f64;
+  --linea: #cfd9d6;
+  --linea-fuerte: #9fb1ad;
+  --pino: #0c4f59;
+  --pino-oscuro: #083a42;
+  --pino-claro: #d9eaea;
+  --programada: #2457c5;
+  --programada-fondo: #e3ebfb;
+  --atendida: #1f7a4c;
+  --atendida-fondo: #dff1e7;
+  --cancelada: #8c3a30;
+  --cancelada-fondo: #f6e4e1;
+  --aviso: #8a5a00;
+  --aviso-fondo: #fbefd0;
+  --radio: 6px;
+  --fuente: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--tinta);
+  background: var(--papel);
+}
+h1, h2, h3 { line-height: 1.2; margin: 0; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.2rem; }
+h3 { font-size: 1.02rem; }
+p { margin: 0 0 .75rem; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--programada); outline-offset: 2px; }
+.solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums; }
+.suave { color: var(--tinta-suave); }
+.pequeno { font-size: .9rem; }
+
+/* ---------- botones ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  min-height: 40px; padding: .45rem 1rem;
+  border: 1.5px solid var(--pino); border-radius: var(--radio);
+  background: var(--superficie); color: var(--pino);
+  font-weight: 700; cursor: pointer; text-decoration: none;
+}
+.btn:hover { background: var(--pino-claro); }
+.btn-primario { background: var(--pino); color: #fff; }
+.btn-primario:hover { background: var(--pino-oscuro); }
+.btn-peligro { border-color: var(--cancelada); color: var(--cancelada); }
+.btn-peligro:hover { background: var(--cancelada-fondo); }
+.btn-enlace { border-color: transparent; background: none; text-decoration: underline; padding-inline: .4rem; }
+.btn-enlace:hover { background: none; text-decoration-thickness: 2px; }
+.btn[disabled] { opacity: .55; cursor: not-allowed; }
+.btn-pequeno { min-height: 32px; padding: .2rem .7rem; font-size: .92rem; }
+
+/* ---------- formularios ---------- */
+.campo { display: flex; flex-direction: column; gap: .25rem; margin-bottom: .9rem; }
+.campo > span:first-child { font-weight: 700; font-size: .95rem; }
+.campo small { color: var(--tinta-suave); }
+input, select, textarea {
+  width: 100%; min-height: 40px; padding: .45rem .65rem;
+  border: 1.5px solid var(--linea-fuerte); border-radius: var(--radio); background: #fff;
+}
+textarea { min-height: 84px; resize: vertical; line-height: 1.45; }
+input[readonly], textarea[readonly], input:disabled, select:disabled { background: #f3f6f5; color: var(--tinta-suave); }
+.rejilla-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); column-gap: 1rem; }
+.acciones { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
+.acciones.derecha { justify-content: flex-end; }
+
+.alerta {
+  padding: .65rem .9rem; border-radius: var(--radio); margin-bottom: .9rem;
+  background: var(--cancelada-fondo); border: 1.5px solid var(--cancelada); color: #5c211a;
+}
+.alerta.info { background: var(--aviso-fondo); border-color: #c99400; color: var(--aviso); }
+.alerta.ok { background: var(--atendida-fondo); border-color: var(--atendida); color: #0f4b2d; }
+
+/* ---------- inicio de sesión ---------- */
+.acceso { min-height: 100vh; display: grid; grid-template-columns: minmax(300px, 5fr) 6fr; }
+.acceso-marca {
+  background: var(--pino); color: #e9f3f2; padding: 3rem 3.2rem;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 2rem;
+}
+.acceso-marca .logo { font-size: 1.15rem; font-weight: 700; letter-spacing: .01em; }
+.acceso-marca h1 { font-size: clamp(2rem, 4vw, 3rem); max-width: 14ch; line-height: 1.08; }
+.acceso-marca p { max-width: 38ch; color: #bcd5d3; margin-top: 1rem; }
+.acceso-marca .prototipo { font-size: .88rem; color: #9fc0be; max-width: 44ch; }
+.acceso-form { display: flex; align-items: center; justify-content: center; padding: 2rem 1.25rem; }
+.acceso-form form { width: 100%; max-width: 380px; }
+.acceso-form h2 { margin-bottom: 1.2rem; font-size: 1.5rem; }
+.demo { margin-top: 1.6rem; border-top: 1px solid var(--linea); padding-top: 1rem; font-size: .92rem; }
+.demo summary { cursor: pointer; font-weight: 700; }
+.demo ul { list-style: none; padding: 0; margin: .6rem 0 0; display: grid; gap: .3rem; }
+.demo button { width: 100%; text-align: left; padding: .35rem .6rem; border: 1px solid var(--linea); border-radius: var(--radio); background: #fff; cursor: pointer; }
+.demo button:hover { border-color: var(--pino); background: var(--pino-claro); }
+.demo b { display: inline-block; min-width: 6.5rem; }
+
+/* ---------- estructura de la aplicación ---------- */
+.estructura { min-height: 100vh; display: grid; grid-template-columns: 250px 1fr; }
+.lateral {
+  background: var(--pino); color: #e9f3f2; padding: 1.4rem 1rem;
+  display: flex; flex-direction: column; gap: 1.5rem;
+  position: sticky; top: 0; height: 100vh;
+}
+.lateral .logo { font-weight: 700; font-size: 1.1rem; padding: 0 .6rem; }
+.lateral .logo small { display: block; font-weight: 400; color: #9fc0be; font-size: .85rem; }
+.lateral nav { display: flex; flex-direction: column; gap: .2rem; }
+.lateral nav a {
+  display: block; padding: .6rem .7rem; border-radius: var(--radio);
+  color: #d6e8e6; text-decoration: none; font-weight: 700; border-left: 4px solid transparent;
+}
+.lateral nav a:hover { background: var(--pino-oscuro); }
+.lateral nav a[aria-current="page"] { background: var(--pino-oscuro); color: #fff; border-left-color: #f0c14b; }
+.lateral .sesion { margin-top: auto; padding: .8rem .6rem 0; border-top: 1px solid #2b6a73; font-size: .92rem; }
+.lateral .sesion b { display: block; color: #fff; }
+.lateral .sesion .btn { margin-top: .7rem; width: 100%; background: transparent; color: #fff; border-color: #6fa1a6; }
+.lateral .sesion .btn:hover { background: var(--pino-oscuro); }
+.principal { padding: 1.8rem 2rem 3rem; min-width: 0; }
+.encabezado { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: .8rem 1.5rem; margin-bottom: 1.4rem; }
+.encabezado p { margin: .25rem 0 0; color: var(--tinta-suave); }
+.menu-movil { display: none; }
+
+.panel { background: var(--superficie); border: 1px solid var(--linea); border-radius: 8px; padding: 1.2rem 1.3rem; }
+.panel + .panel { margin-top: 1rem; }
+.panel > h2, .panel > h3 { margin-bottom: .8rem; }
+
+/* ---------- barra de herramientas ---------- */
+.barra { display: flex; flex-wrap: wrap; gap: .7rem 1rem; align-items: end; margin-bottom: 1rem; }
+.barra .campo { margin: 0; min-width: 190px; }
+.barra .campo.ancho { flex: 1 1 260px; }
+.dia-nav { display: flex; align-items: end; gap: .4rem; }
+.dia-nav .campo { margin: 0; }
+.segmento { display: inline-flex; border: 1.5px solid var(--pino); border-radius: var(--radio); overflow: hidden; }
+.segmento button { border: 0; background: #fff; color: var(--pino); padding: .5rem .9rem; font-weight: 700; cursor: pointer; min-height: 40px; }
+.segmento button[aria-pressed="true"] { background: var(--pino); color: #fff; }
+
+/* ---------- agenda: línea de tiempo del día ---------- */
+.titulo-dia { font-size: 1.3rem; }
+.titulo-dia::first-letter, .semana-dia h3::first-letter { text-transform: uppercase; }
+.resumen-dia { margin: .2rem 0 1rem; color: var(--tinta-suave); }
+.linea-tiempo { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--linea); }
+.franja { display: grid; grid-template-columns: 74px 1fr; border-bottom: 1px solid var(--linea); min-height: 60px; }
+.franja .hora {
+  padding: .75rem .5rem .5rem 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--tinta-suave); border-right: 3px solid var(--linea); padding-right: .8rem; position: relative;
+}
+.franja.ocupada .hora { color: var(--tinta); border-right-color: var(--programada); }
+.franja.ocupada.atendida .hora { border-right-color: var(--atendida); }
+.franja .contenido { padding: .4rem 0 .4rem .9rem; display: flex; align-items: center; }
+.libre {
+  width: 100%; min-height: 44px; text-align: left; padding: .4rem .8rem; cursor: pointer;
+  border: 1.5px dashed var(--linea-fuerte); border-radius: var(--radio); background: transparent; color: var(--tinta-suave);
+}
+.libre:hover, .libre:focus-visible { border-style: solid; border-color: var(--pino); color: var(--pino); background: var(--pino-claro); }
+.cita {
+  width: 100%; text-align: left; cursor: pointer; padding: .55rem .9rem; display: flex; flex-wrap: wrap;
+  justify-content: space-between; align-items: center; gap: .3rem .8rem;
+  border: 1.5px solid var(--programada); border-left-width: 6px; border-radius: var(--radio); background: var(--programada-fondo);
+}
+.cita:hover { filter: brightness(.97); }
+.cita.atendida { border-color: var(--atendida); background: var(--atendida-fondo); }
+.cita .quien b { display: block; }
+.cita .quien span { color: var(--tinta-suave); font-size: .9rem; }
+.sello { display: inline-block; padding: .1rem .55rem; border-radius: 99px; font-size: .85rem; font-weight: 700; border: 1.5px solid currentColor; }
+.sello.programada { color: var(--programada); background: #fff; }
+.sello.atendida { color: var(--atendida); background: #fff; }
+.sello.cancelada { color: var(--cancelada); background: #fff; }
+.lista-simple { list-style: none; margin: 0; padding: 0; }
+.lista-simple li { padding: .5rem 0; border-bottom: 1px solid var(--linea); }
+.lista-simple li:last-child { border-bottom: 0; }
+.tachada { text-decoration: line-through; color: var(--tinta-suave); }
+
+.semana-dia { margin-bottom: 1.2rem; }
+.semana-dia h3 { margin-bottom: .4rem; }
+
+/* ---------- pacientes ---------- */
+.dos-columnas { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 1rem; align-items: start; }
+.resultados { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.resultados button {
+  width: 100%; text-align: left; padding: .6rem .8rem; border: 1.5px solid var(--linea); border-radius: var(--radio);
+  background: #fff; cursor: pointer;
+}
+.resultados button:hover { border-color: var(--pino); }
+.resultados button[aria-pressed="true"] { border-color: var(--pino); background: var(--pino-claro); }
+.resultados b { display: block; }
+.resultados span { font-size: .9rem; color: var(--tinta-suave); }
+.ficha { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .9rem 1.3rem; margin: 0 0 1rem; }
+.ficha > div { min-width: 0; }
+.ficha dt { font-size: .88rem; color: var(--tinta-suave); }
+.ficha dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.alergias { background: var(--aviso-fondo); border-left: 6px solid #c99400; padding: .6rem .9rem; border-radius: var(--radio); margin-bottom: 1rem; }
+.vacio { padding: 2rem 1rem; text-align: center; color: var(--tinta-suave); border: 1.5px dashed var(--linea-fuerte); border-radius: 8px; }
+
+/* ---------- consulta y atención ---------- */
+.atencion { display: grid; grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr); gap: 1rem; align-items: start; }
+.consulta-previa { border-left: 4px solid var(--linea-fuerte); padding: .2rem 0 .2rem .8rem; margin-bottom: 1rem; }
+.consulta-previa h3 { font-size: 1rem; }
+.consulta-previa dl { margin: .4rem 0 0; }
+.consulta-previa dt { font-size: .85rem; color: var(--tinta-suave); }
+.consulta-previa dd { margin: 0 0 .4rem; white-space: pre-wrap; }
+.nota { border-left: 4px solid #c99400; background: var(--aviso-fondo); padding: .5rem .8rem; border-radius: 0 var(--radio) var(--radio) 0; margin-bottom: .6rem; }
+.nota small { display: block; color: var(--aviso); }
+.cerrada-aviso { margin-bottom: 1rem; }
+
+/* ---------- tablas ---------- */
+.tabla-contenedor { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: .55rem .7rem; text-align: left; border-bottom: 1px solid var(--linea); vertical-align: top; }
+th { font-size: .9rem; color: var(--tinta-suave); background: #f6f9f8; position: sticky; top: 0; }
+td.num, th.num { text-align: right; }
+td.fecha { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---------- diálogos y avisos ---------- */
+dialog { border: 0; border-radius: 10px; padding: 0; width: min(560px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); box-shadow: 0 20px 60px rgba(8, 40, 46, .35); color: var(--tinta); }
+dialog::backdrop { background: rgba(8, 40, 46, .55); }
+dialog.ancho { width: min(760px, calc(100vw - 2rem)); }
+.dialogo-cabecera { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding: 1.1rem 1.3rem .6rem; }
+.dialogo-cuerpo { padding: .4rem 1.3rem 1.3rem; }
+.cerrar { border: 0; background: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--tinta-suave); padding: 0 .3rem; min-width: 40px; min-height: 40px; }
+.cuadricula-horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: .5rem; margin: .8rem 0; }
+.cuadricula-horas button { min-height: 42px; border: 1.5px solid var(--pino); border-radius: var(--radio); background: #fff; font-weight: 700; color: var(--pino); cursor: pointer; font-variant-numeric: tabular-nums; }
+.cuadricula-horas button:hover { background: var(--pino-claro); }
+.cuadricula-horas button[aria-pressed="true"] { background: var(--pino); color: #fff; }
+#avisos { position: fixed; right: 1rem; bottom: 1rem; display: grid; gap: .5rem; z-index: 50; max-width: min(380px, calc(100vw - 2rem)); }
+.aviso { padding: .7rem 1rem; border-radius: var(--radio); background: var(--tinta); color: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); }
+.aviso.error { background: var(--cancelada); }
+.cargando { color: var(--tinta-suave); padding: 1rem 0; }
+
+/* ---------- adaptación a pantallas pequeñas ---------- */
+@media (max-width: 900px) {
+  .acceso { grid-template-columns: 1fr; }
+  .acceso-marca { padding: 1.6rem 1.25rem; }
+  .estructura { grid-template-columns: 1fr; }
+  .lateral { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: .8rem 1rem; gap: .8rem; }
+  .lateral nav { flex-direction: row; flex-wrap: wrap; order: 3; width: 100%; }
+  .lateral nav a { border-left: 0; border-bottom: 4px solid transparent; }
+  .lateral nav a[aria-current="page"] { border-bottom-color: #f0c14b; }
+  .lateral .sesion { margin: 0 0 0 auto; border: 0; padding: 0; display: flex; align-items: center; gap: .8rem; }
+  .lateral .sesion .btn { margin: 0; width: auto; }
+  .principal { padding: 1.2rem 1rem 2.5rem; }
+  .dos-columnas, .atencion { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .franja { grid-template-columns: 58px 1fr; }
+  .lateral .sesion span { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .franja .contenido { animation: aparece .15s ease-out; }
+  @keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
+}
