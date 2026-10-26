@@ -45,7 +45,7 @@ Se presentan dos vistas del mismo modelo para mantener la legibilidad.
 
 ### 2b. Servicios y patrón Repository
 
-**Descripción.** Tres niveles: los servicios de aplicación (`PacienteService`, `CitaService`, `ConsultaService`, `AutenticacionService`) contienen la lógica de negocio; las interfaces `I...Repository` definen cómo se obtienen y guardan los objetos de dominio; las clases `Sql...Repository` implementan esas interfaces y son las únicas que hablan con la base de datos. Todas las interfaces, salvo la de auditoría, extienden `IRepository<T>` con las operaciones comunes. Los repositorios de paciente y de consulta registran cada acceso mediante `IAuditoriaRepository`.
+**Descripción.** Tres niveles: los servicios de aplicación (`PacienteService`, `CitaService`, `ConsultaService`, `NotificacionService`, `AutenticacionService`) contienen la lógica de negocio; las interfaces `I...Repository` definen cómo se obtienen y guardan los objetos de dominio; las clases `Memory...Repository` implementan esas interfaces y son las únicas que tocan el almacén (en el prototipo, listas de objetos en memoria; en producción se reemplazan por clases `Sql...Repository` sin cambiar los servicios). Todas las interfaces, salvo la de auditoría, extienden `IRepository<T>` con las operaciones comunes. Los repositorios de paciente y de consulta registran cada acceso mediante `IAuditoriaRepository`.
 
 **Justificación.** Es la aplicación directa del patrón Repository (Evans, 2003; Fowler, 2002): los servicios dependen de abstracciones, no de la base de datos, lo que permite:
 
