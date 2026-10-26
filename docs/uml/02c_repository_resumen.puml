@@ -1,5 +1,5 @@
 @startuml 02c_repository_resumen
-' Vista resumida del patrón Repository (se muestran 3 de los 6 repositorios; los demás siguen el mismo esquema)
+' Vista resumida del patrón Repository (se muestran 3 de los 10 repositorios; los demás siguen el mismo esquema)
 top to bottom direction
 skinparam monochrome true
 skinparam shadowing false
