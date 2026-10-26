@@ -1,5 +1,7 @@
 # Consultorio Médico "Salud Integral"
 
+**Creado por José Ignacio Gómez Guzmán**
+
 Prototipo de un sistema web para centralizar y proteger la información de pacientes, citas e historias clínicas de un consultorio médico pequeño. Proyecto de la actividad de arquitectura de software: análisis de requisitos, diagramas UML, patrones de diseño y prototipo listo para la nube.
 
 - **Backend:** Python 3.12+ con FastAPI.
