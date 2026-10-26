@@ -8,62 +8,53 @@ skinparam dpi 150
 skinparam defaultFontSize 12
 skinparam sequenceMessageAlign center
 skinparam responseMessageBelowArrow true
+skinparam wrapWidth 190
+skinparam maxMessageSize 190
 
 title Diagrama de secuencia: CU-04 Agendar cita\nSistema de Gestión "Salud Integral"
 
 actor "Recepcionista" as REC
-participant "Interfaz web" as UI
+participant "Interfaz\nweb" as UI
 participant "API y\nseguridad" as API
-participant "PacienteService" as PS
-participant "CitaService" as CS
-participant "IPacienteRepository" as PR
-participant "ICitaRepository" as CR
-database "Base de datos" as BD
-participant "Servicio de\nnotificaciones" as NOT
+participant "Paciente\nService" as PS
+participant "Cita\nService" as CS
+participant "ICita\nRepository" as CR
+participant "Notificación\nService" as NOT
 
 autonumber
 
 == Buscar al paciente (CU-03) ==
-REC -> UI : ingresa documento del paciente
-UI -> API : GET /pacientes?documento=...
+REC -> UI : ingresa el documento
+UI -> API : GET /api/pacientes?q=...
 API -> API : validar sesión y rol (RNF-01)
-API -> PS : buscarPaciente(documento)
-PS -> PR : obtenerPorDocumento(tipo, numero)
-PR -> BD : SELECT paciente
-BD --> PR : registro
-PR --> PS : Paciente
-PS --> API : Paciente
-API --> UI : 200 OK (datos del paciente)
+API -> PS : buscarPaciente(q)
+note right of PS : usa IPacienteRepository.buscar()
+PS --> API : pacientes
+API --> UI : 200 OK
 
 == Consultar horarios libres ==
 REC -> UI : elige médico y fecha
-UI -> API : GET /citas/horarios-libres?medico=...&fecha=...
+UI -> API : GET /api/citas/horarios-libres
 API -> CS : consultarHorariosLibres(medicoId, fecha)
-CS -> CR : obtenerPorMedicoYFecha(medicoId, fecha)
-CR -> BD : SELECT citas del día
-BD --> CR : citas ocupadas
-CR --> CS : List<Cita>
+CS -> CR : obtenerPorMedicoYFecha()
+CR --> CS : citas ocupadas
 CS --> API : horarios libres
-API --> UI : 200 OK (lista de horarios)
-UI --> REC : muestra horarios libres
+API --> UI : 200 OK
+UI --> REC : muestra los horarios
 
 == Confirmar la cita ==
-REC -> UI : selecciona un horario y confirma
-UI -> API : POST /citas
+REC -> UI : elige un horario y confirma
+UI -> API : POST /api/citas
 API -> CS : agendarCita(pacienteId, medicoId, fechaHora)
 CS -> CR : existeCruce(medicoId, fechaHora)
-CR -> BD : SELECT cita en ese horario
-BD --> CR : resultado
 CR --> CS : Boolean
 
-alt el horario ya fue ocupado (RN-02)
-  CS --> API : error: horario no disponible
-  API --> UI : 409 Conflict
+alt el horario ya está ocupado (RN-02)
+  CS --> API : error de conflicto
+  API --> UI : 409 Conflict + horarios libres
   UI --> REC : informa y propone otros horarios
 else el horario está libre
-  CS -> CR : agregar(cita con estado PROGRAMADA)
-  CR -> BD : INSERT cita
-  BD --> CR : cita guardada
+  CS -> CR : agregar(cita PROGRAMADA)
   CR --> CS : Cita
   CS -> NOT : programarRecordatorio(cita) (CU-10)
   NOT --> CS : recordatorio programado
@@ -71,5 +62,7 @@ else el horario está libre
   API --> UI : 201 Created
   UI --> REC : "Cita programada"
 end
+
+note over CR : Solo los repositorios acceden al almacén\n(listas en memoria en el prototipo)
 
 @enduml
