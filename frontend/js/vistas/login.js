@@ -58,7 +58,7 @@ export function pantallaLogin(raiz, alEntrar) {
         h("div", {},
           h("h1", {}, "Pacientes y citas, en un solo lugar."),
           h("p", {}, "Registro de pacientes, agenda de citas e historia clínica con acceso según el cargo de cada persona.")),
-        h("p", { class: "prototipo" }, "Prototipo académico. Los datos se guardan en memoria y se pierden al reiniciar el servidor; todos los pacientes son ficticios.")),
+        h("p", { class: "prototipo" }, h("b", {}, "Creado por José Ignacio Gómez Guzmán."), " Prototipo académico. Los datos se guardan en memoria y se pierden al reiniciar el servidor; todos los pacientes son ficticios.")),
       h("section", { class: "acceso-form" }, formulario))
   );
 }
