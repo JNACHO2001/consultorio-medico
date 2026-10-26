@@ -35,6 +35,24 @@ class ConsultaService <<servicio>> {
   + consultarHistorial(pacienteId) : List<Consulta>
 }
 
+class IngresoService <<servicio>> {
+  + admitir(pacienteId, medicoId, tipo, motivo) : Ingreso
+  + registrarProcedimiento(ingresoId, procedimientoId, cantidad) : ProcedimientoRealizado
+  + anularProcedimiento(ingresoId, id, motivo) : void
+  + darEgreso(ingresoId, resumen) : Ingreso
+}
+
+class FacturacionService <<servicio>> {
+  + facturar(ingresoId, procedimientoIds) : Factura
+  + pagar(facturaId, metodo) : Factura
+  + anular(facturaId, motivo) : Factura
+}
+
+class CatalogoService <<servicio>> {
+  + crear(codigo, nombre, tarifa) : Procedimiento
+  + actualizar(id, nombre, tarifa) : Procedimiento
+}
+
 class NotificacionService <<servicio>> {
   + programarRecordatorio(cita) : void
   + procesarPendientes(ahora) : List<Recordatorio>
@@ -62,6 +80,24 @@ interface IConsultaRepository {
   + obtenerPorPaciente(pacienteId) : List<Consulta>
   + obtenerPorCita(citaId) : Consulta
   + agregarNota(consultaId, nota) : void
+}
+
+interface IIngresoRepository {
+  + obtenerAbiertoPorPaciente(pacienteId) : Ingreso
+  + buscar(estado, medicoId, pacienteId) : List<Ingreso>
+}
+
+interface IProcedimientoRealizadoRepository {
+  + obtenerPorIngreso(ingresoId) : List<ProcedimientoRealizado>
+  + obtenerPorPaciente(pacienteId) : List<ProcedimientoRealizado>
+}
+
+interface IFacturaRepository {
+  + buscar(estado, pacienteId, ingresoId) : List<Factura>
+}
+
+interface IProcedimientoRepository {
+  + obtenerPorCodigo(codigo) : Procedimiento
 }
 
 interface IUsuarioRepository {
@@ -93,6 +129,10 @@ class MemoryConsultaRepository <<implementación>>
 class MemoryUsuarioRepository <<implementación>>
 class MemoryRecordatorioRepository <<implementación>>
 class MemoryAuditoriaRepository <<implementación>>
+class MemoryIngresoRepository <<implementación>>
+class MemoryProcedimientoRealizadoRepository <<implementación>>
+class MemoryFacturaRepository <<implementación>>
+class MemoryProcedimientoRepository <<implementación>>
 
 class "Listas de objetos en memoria\n(base de datos del prototipo)" as BD <<almacén>>
 
@@ -104,6 +144,12 @@ ConsultaService ..> IConsultaRepository
 AutenticacionService ..> IUsuarioRepository
 NotificacionService ..> IRecordatorioRepository
 CitaService ..> NotificacionService : programa recordatorio
+IngresoService ..> IIngresoRepository
+IngresoService ..> IProcedimientoRealizadoRepository
+IngresoService ..> CatalogoService : toma tarifa
+FacturacionService ..> IFacturaRepository
+FacturacionService ..> IProcedimientoRealizadoRepository
+CatalogoService ..> IProcedimientoRepository
 
 ' Interfaz genérica común (T = entidad)
 IPacienteRepository --|> IRepository
@@ -111,6 +157,10 @@ ICitaRepository --|> IRepository
 IConsultaRepository --|> IRepository
 IUsuarioRepository --|> IRepository
 IRecordatorioRepository --|> IRepository
+IIngresoRepository --|> IRepository
+IProcedimientoRealizadoRepository --|> IRepository
+IFacturaRepository --|> IRepository
+IProcedimientoRepository --|> IRepository
 
 ' Implementaciones
 MemoryPacienteRepository ..|> IPacienteRepository
@@ -119,10 +169,17 @@ MemoryConsultaRepository ..|> IConsultaRepository
 MemoryUsuarioRepository ..|> IUsuarioRepository
 MemoryRecordatorioRepository ..|> IRecordatorioRepository
 MemoryAuditoriaRepository ..|> IAuditoriaRepository
+MemoryIngresoRepository ..|> IIngresoRepository
+MemoryProcedimientoRealizadoRepository ..|> IProcedimientoRealizadoRepository
+MemoryFacturaRepository ..|> IFacturaRepository
+MemoryProcedimientoRepository ..|> IProcedimientoRepository
 
 ' Auditoría disparada desde el repositorio (RF-13)
 MemoryPacienteRepository ..> IAuditoriaRepository : registra accesos
 MemoryConsultaRepository ..> IAuditoriaRepository : registra accesos
+MemoryIngresoRepository ..> IAuditoriaRepository : registra accesos
+MemoryProcedimientoRealizadoRepository ..> IAuditoriaRepository : registra accesos
+MemoryFacturaRepository ..> IAuditoriaRepository : registra accesos
 
 MemoryPacienteRepository --> BD
 MemoryCitaRepository --> BD
@@ -130,11 +187,16 @@ MemoryConsultaRepository --> BD
 MemoryUsuarioRepository --> BD
 MemoryRecordatorioRepository --> BD
 MemoryAuditoriaRepository --> BD
+MemoryIngresoRepository --> BD
+MemoryProcedimientoRealizadoRepository --> BD
+MemoryFacturaRepository --> BD
+MemoryProcedimientoRepository --> BD
 
 note bottom of IRepository
   desactivar() hace borrado lógico:
   no existe eliminación física (RNF-11).
-  T = Paciente, Cita, Consulta o Usuario.
+  T = Paciente, Cita, Consulta, Usuario, Ingreso,
+  ProcedimientoRealizado, Factura, etc.
 end note
 
 note bottom of BD
