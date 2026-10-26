@@ -153,6 +153,9 @@ class IngresoService:
     def procedimientos_de_ingreso(self, ingreso_id: int) -> list[ProcedimientoRealizado]:
         return self._realizados.obtener_por_ingreso(ingreso_id)
 
+    def procedimientos_de_ingresos(self, ingreso_ids: list[int]) -> list[ProcedimientoRealizado]:
+        return self._realizados.obtener_por_ingresos(ingreso_ids) if ingreso_ids else []
+
     def historia_de_procedimientos(self, paciente_id: int) -> list[ProcedimientoRealizado]:
         if self._pacientes.obtener_por_id(paciente_id) is None:
             raise NoEncontrado("El paciente no existe.")
