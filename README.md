@@ -6,7 +6,7 @@ Prototipo de un sistema web para centralizar y proteger la información de pacie
 
 - **Backend:** Python 3.12+ con FastAPI.
 - **Frontend:** JavaScript puro (módulos ES), sin paso de compilación. FastAPI lo sirve en la raíz (`/`).
-- **Módulo de ingresos y facturación (estilo "mini Servinte"):** lista de todos los pacientes, ingreso del paciente, procedimientos realizados que quedan en su historia clínica y facturación por procedimiento.
+- **Módulo de ingresos y facturación (estilo "mini salud facil"):** lista de todos los pacientes, ingreso del paciente, procedimientos realizados que quedan en su historia clínica y facturación por procedimiento.
 - **Patrón principal:** Repository. Los datos viven en **listas de objetos en memoria**, accedidas solo a través de interfaces de repositorio.
 
 > Prototipo académico. Los pacientes y usuarios de demostración son ficticios. Los datos se pierden al reiniciar el servidor.
