@@ -59,8 +59,11 @@ def pagar(
 
 @router.post("/{factura_id}/anular", response_model=FacturaOut, summary="Anular una factura emitida")
 def anular(
-    factura_id: int, datos: AnulacionIn, c: Contenedor = Depends(contenedor), _: Usuario = Depends(_recepcion)
+    factura_id: int, datos: AnulacionIn, c: Contenedor = Depends(contenedor), usuario: Usuario = Depends(_recepcion)
 ) -> FacturaOut:
+    """Sin factura electrónica aceptada se anula directo; con ella, se emite primero la nota crédito (RN-21)."""
+    if c.electronica.tiene_factura_aceptada(factura_id):
+        return facturas_out(c, [c.electronica.anular_con_nota_credito(factura_id, datos.motivo, usuario)])[0]
     return facturas_out(c, [c.facturacion.anular(factura_id, datos.motivo)])[0]
 
 
