@@ -5,14 +5,17 @@ from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.modelos import (
+    AreaApoyo,
     ConceptoGlosa,
     EstadoCita,
     EstadoFactura,
     EstadoGlosa,
     EstadoIngreso,
+    EstadoOrden,
     EstadoRecordatorio,
     MetodoPago,
     OrigenPago,
+    PrioridadOrden,
     Rol,
     TipoIngreso,
     TipoPagador,
@@ -227,6 +230,7 @@ class ProcedimientoCatalogoIn(BaseModel):
     tarifa: int = Field(description="Valor base en pesos, sin decimales")
     cups: str = Field("", max_length=6, description="Código CUPS de 6 dígitos (opcional, lo exige el RIPS)")
     tipo_servicio: TipoServicio = TipoServicio.PROCEDIMIENTO
+    area_apoyo: AreaApoyo = AreaApoyo.NINGUNA
 
 
 class ProcedimientoCatalogoUpdate(BaseModel):
@@ -234,6 +238,7 @@ class ProcedimientoCatalogoUpdate(BaseModel):
     tarifa: Optional[int] = None
     cups: Optional[str] = Field(None, max_length=6)
     tipo_servicio: Optional[TipoServicio] = None
+    area_apoyo: Optional[AreaApoyo] = None
 
 
 class ProcedimientoCatalogoOut(Salida):
@@ -243,6 +248,7 @@ class ProcedimientoCatalogoOut(Salida):
     tarifa: int
     cups: str = ""
     tipo_servicio: TipoServicio = TipoServicio.PROCEDIMIENTO
+    area_apoyo: AreaApoyo = AreaApoyo.NINGUNA
 
 
 # ----------------------------------------------------------------------- pagadores y convenios
@@ -364,6 +370,7 @@ class IngresoOut(Salida):
     porcentaje_tarifa: int = 100
     numero_autorizacion: str = ""
     diagnostico_principal: Optional[str] = None  # dato clínico: solo lo ve el médico
+    diagnostico_descripcion: Optional[str] = None
     n_procedimientos: int = 0
     total: int = 0
     pendiente_facturar: int = 0
@@ -518,3 +525,64 @@ class RecordatorioOut(Salida):
     canal: str
     fecha_envio: datetime
     estado: EstadoRecordatorio
+
+
+# ----------------------------------------------------------------------- CIE-10, órdenes y resultados
+
+
+class Cie10Out(BaseModel):
+    codigo: str
+    descripcion: str
+
+
+class OrdenIn(BaseModel):
+    ingreso_id: int
+    procedimiento_id: int
+    cantidad: int = Field(1, ge=1, le=99)
+    prioridad: PrioridadOrden = PrioridadOrden.RUTINA
+    indicacion: str = Field("", max_length=500, description="Motivo clínico o indicación para quien realiza el examen")
+
+
+class ResultadoValorIn(BaseModel):
+    parametro: str = Field(max_length=80)
+    valor: str = Field(max_length=60)
+    unidad: str = Field("", max_length=20)
+    ref_min: Optional[float] = None
+    ref_max: Optional[float] = None
+
+
+class ResultadoValorOut(ResultadoValorIn):
+    model_config = ConfigDict(from_attributes=True)
+
+    alterado: Optional[bool] = None
+
+
+class ResultadoIn(BaseModel):
+    valores: list[ResultadoValorIn] = []
+    interpretacion: str = Field("", max_length=3000)
+
+
+class OrdenOut(Salida):
+    id: int
+    ingreso_id: int
+    paciente_id: int
+    paciente_nombre: str = ""
+    paciente_documento: str = ""
+    medico_id: int
+    medico_nombre: str = ""
+    procedimiento_id: int
+    codigo: str
+    nombre: str
+    cups: str = ""
+    area: AreaApoyo
+    cantidad: int
+    prioridad: PrioridadOrden
+    indicacion: str = ""
+    fecha: Optional[datetime] = None
+    estado: EstadoOrden
+    valores: list[ResultadoValorOut] = []
+    interpretacion: str = ""
+    fecha_resultado: Optional[datetime] = None
+    registrado_por: str = ""
+    motivo_anulacion: str = ""
+    alterada: bool = False
