@@ -85,6 +85,27 @@ export const api = {
   put: (ruta, cuerpo) => pedir("PUT", ruta, { cuerpo }),
 };
 
+// Descarga un archivo que exige sesión (por ejemplo el XML de una factura electrónica).
+export async function descargar(ruta, nombre) {
+  const actual = sesion.actual();
+  let respuesta;
+  try {
+    respuesta = await fetch(ruta, { headers: actual ? { Authorization: `Bearer ${actual.token}` } : {} });
+  } catch {
+    throw new ErrorApi(0, { detail: "No hay conexión con el servidor. Revise la red e intente de nuevo." });
+  }
+  if (!respuesta.ok) {
+    if (respuesta.status === 401 && actual) alExpirar();
+    throw new ErrorApi(respuesta.status, { detail: "No se pudo descargar el archivo." });
+  }
+  const url = URL.createObjectURL(await respuesta.blob());
+  const enlace = Object.assign(document.createElement("a"), { href: url, download: nombre });
+  document.body.append(enlace);
+  enlace.click();
+  enlace.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export async function iniciarSesion(usuario, contrasena) {
   const datos = await api.post("/api/auth/login", { usuario, contrasena });
   sesion.guardar({ token: datos.access_token, usuario: datos.usuario });
