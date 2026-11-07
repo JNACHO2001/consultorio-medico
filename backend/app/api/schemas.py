@@ -5,13 +5,18 @@ from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.modelos import (
+    ConceptoGlosa,
     EstadoCita,
     EstadoFactura,
+    EstadoGlosa,
     EstadoIngreso,
     EstadoRecordatorio,
     MetodoPago,
+    OrigenPago,
     Rol,
     TipoIngreso,
+    TipoPagador,
+    TipoServicio,
 )
 
 TipoDocumento = Literal["CC", "TI", "CE", "PA", "RC"]
@@ -219,12 +224,16 @@ class ConsultaOut(Salida):
 class ProcedimientoCatalogoIn(BaseModel):
     codigo: str = Field(max_length=12)
     nombre: str = Field(max_length=120)
-    tarifa: int = Field(description="Valor en pesos, sin decimales")
+    tarifa: int = Field(description="Valor base en pesos, sin decimales")
+    cups: str = Field("", max_length=6, description="Código CUPS de 6 dígitos (opcional, lo exige el RIPS)")
+    tipo_servicio: TipoServicio = TipoServicio.PROCEDIMIENTO
 
 
 class ProcedimientoCatalogoUpdate(BaseModel):
     nombre: Optional[str] = Field(None, max_length=120)
     tarifa: Optional[int] = None
+    cups: Optional[str] = Field(None, max_length=6)
+    tipo_servicio: Optional[TipoServicio] = None
 
 
 class ProcedimientoCatalogoOut(Salida):
@@ -232,6 +241,60 @@ class ProcedimientoCatalogoOut(Salida):
     codigo: str
     nombre: str
     tarifa: int
+    cups: str = ""
+    tipo_servicio: TipoServicio = TipoServicio.PROCEDIMIENTO
+
+
+# ----------------------------------------------------------------------- pagadores y convenios
+
+
+class PagadorIn(BaseModel):
+    codigo: str = Field(max_length=12)
+    nombre: str = Field(max_length=120)
+    tipo: TipoPagador = TipoPagador.EPS
+    nit: str = Field("", max_length=20)
+
+
+class PagadorUpdate(BaseModel):
+    nombre: Optional[str] = Field(None, max_length=120)
+    nit: Optional[str] = Field(None, max_length=20)
+
+
+class ConvenioIn(BaseModel):
+    nombre: str = Field(max_length=120)
+    porcentaje_tarifa: int = Field(100, description="100 = tarifa base completa")
+    copago_porcentaje: int = Field(0, description="% de la cuenta que paga el paciente")
+    cuota_moderadora: int = Field(0, description="Valor fijo en pesos que paga el paciente")
+    requiere_autorizacion: bool = False
+
+
+class ConvenioUpdate(BaseModel):
+    nombre: Optional[str] = Field(None, max_length=120)
+    porcentaje_tarifa: Optional[int] = None
+    copago_porcentaje: Optional[int] = None
+    cuota_moderadora: Optional[int] = None
+    requiere_autorizacion: Optional[bool] = None
+
+
+class ConvenioOut(Salida):
+    id: int
+    pagador_id: int
+    nombre: str
+    porcentaje_tarifa: int
+    copago_porcentaje: int
+    cuota_moderadora: int
+    requiere_autorizacion: bool
+    activo: bool
+
+
+class PagadorOut(Salida):
+    id: int
+    codigo: str
+    nombre: str
+    tipo: TipoPagador
+    nit: str
+    activo: bool
+    convenios: list[ConvenioOut] = []
 
 
 class IngresoIn(BaseModel):
@@ -239,6 +302,12 @@ class IngresoIn(BaseModel):
     medico_id: int
     tipo: TipoIngreso = TipoIngreso.AMBULATORIO
     motivo: str = Field(max_length=500)
+    convenio_id: Optional[int] = Field(None, description="Si se omite, se admite como particular")
+    numero_autorizacion: str = Field("", max_length=40)
+
+
+class DiagnosticoIn(BaseModel):
+    codigo_cie10: str = Field(max_length=5, description="Código CIE-10 sin punto, por ejemplo J00")
 
 
 class EgresoIn(BaseModel):
@@ -263,6 +332,8 @@ class RealizadoOut(Salida):
     medico_nombre: str = ""
     codigo: str
     nombre: str
+    cups: str = ""
+    tipo_servicio: TipoServicio = TipoServicio.PROCEDIMIENTO
     cantidad: int
     valor_unitario: int
     subtotal: int
@@ -287,6 +358,12 @@ class IngresoOut(Salida):
     estado: EstadoIngreso
     fecha_egreso: Optional[datetime]
     resumen_egreso: Optional[str] = None  # dato clínico: solo lo ve el médico
+    convenio_id: Optional[int] = None
+    convenio_nombre: str = ""
+    pagador_nombre: str = ""
+    porcentaje_tarifa: int = 100
+    numero_autorizacion: str = ""
+    diagnostico_principal: Optional[str] = None  # dato clínico: solo lo ve el médico
     n_procedimientos: int = 0
     total: int = 0
     pendiente_facturar: int = 0
@@ -307,6 +384,31 @@ class PagoIn(BaseModel):
     metodo_pago: MetodoPago
 
 
+class RadicacionIn(BaseModel):
+    numero_radicacion: str = Field("", max_length=40, description="Si se omite, se genera uno")
+
+
+class PagoPagadorIn(BaseModel):
+    valor: int = Field(description="Valor abonado por el pagador, en pesos")
+    metodo_pago: MetodoPago = MetodoPago.TRANSFERENCIA
+    referencia: str = Field("", max_length=60, description="Comprobante o número de transferencia")
+
+
+class GlosaIn(BaseModel):
+    concepto: ConceptoGlosa
+    motivo: str = Field(max_length=500)
+    valor: int = Field(description="Valor glosado, en pesos")
+
+
+class RespuestaGlosaIn(BaseModel):
+    respuesta: str = Field(max_length=1000)
+
+
+class ResolucionGlosaIn(BaseModel):
+    aceptada: bool = Field(description="True: la IPS acepta la glosa; False: el pagador la levanta")
+    nota: str = Field("", max_length=500)
+
+
 class LineaFacturaOut(Salida):
     procedimiento_realizado_id: int
     codigo: str
@@ -314,6 +416,27 @@ class LineaFacturaOut(Salida):
     cantidad: int
     valor_unitario: int
     subtotal: int
+
+
+class PagoFacturaOut(Salida):
+    origen: OrigenPago
+    metodo: MetodoPago
+    valor: int
+    fecha: datetime
+    referencia: str = ""
+
+
+class GlosaOut(Salida):
+    id: int
+    concepto: ConceptoGlosa
+    motivo: str
+    valor: int
+    fecha: datetime
+    estado: EstadoGlosa
+    respuesta: str = ""
+    fecha_respuesta: Optional[datetime] = None
+    nota_resolucion: str = ""
+    fecha_resolucion: Optional[datetime] = None
 
 
 class FacturaOut(Salida):
@@ -331,6 +454,48 @@ class FacturaOut(Salida):
     fecha_pago: Optional[datetime] = None
     motivo_anulacion: str = ""
     emitida_por: str = ""
+    pagador_id: Optional[int] = None
+    pagador_nombre: str = ""
+    convenio_nombre: str = ""
+    valor_paciente: int = 0
+    valor_pagador: int = 0
+    pagado_paciente: int = 0
+    pagado_pagador: int = 0
+    saldo_paciente: int = 0
+    saldo_pagador: int = 0
+    saldo: int = 0
+    glosado_aceptado: int = 0
+    glosa_en_disputa: int = 0
+    fecha_radicacion: Optional[datetime] = None
+    numero_radicacion: str = ""
+    dias_radicada: Optional[int] = None
+    pagos: list[PagoFacturaOut] = []
+    glosas: list[GlosaOut] = []
+
+
+class TramosCarteraOut(BaseModel):
+    sin_radicar: int = 0
+    d0_30: int = 0
+    d31_60: int = 0
+    d61_90: int = 0
+    d_mas_90: int = 0
+
+
+class CarteraPagadorOut(BaseModel):
+    pagador_id: int
+    pagador_nombre: str
+    n_facturas: int
+    facturado: int
+    recaudado: int
+    glosa_aceptada: int
+    en_disputa: int
+    saldo: int
+    tramos: TramosCarteraOut
+
+
+class CarteraDetalleOut(BaseModel):
+    resumen: Optional[CarteraPagadorOut] = None
+    facturas: list[FacturaOut] = []
 
 
 # ----------------------------------------------------------------------- auditoría y recordatorios
