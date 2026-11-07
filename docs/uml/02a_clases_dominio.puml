@@ -149,6 +149,66 @@ class PagoFactura {
   - valor : Entero (pesos)
   - fecha : DateTime
   - referencia : String
+  - reciboNumero : String
+}
+
+class OrdenClinica {
+  - fecha : DateTime
+  - area : AreaApoyo
+  - prioridad : PrioridadOrden
+  - indicacion : String
+  - estado : EstadoOrden
+  - observaciones : String
+}
+
+class ResultadoValor {
+  - parametro : String
+  - valor : Decimal
+  - unidad : String
+  - refMin : Decimal
+  - refMax : Decimal
+  + alterado() : Boolean
+}
+
+enum EstadoOrden {
+  SOLICITADA
+  REALIZADA
+  ANULADA
+}
+
+class DocumentoElectronico {
+  - tipo : TipoDocumentoElectronico
+  - prefijo : String
+  - consecutivo : Entero
+  - adquirente : NIT o documento
+  - valor : Entero (pesos)
+  - cufe : SHA-384
+  - xml : UBL 2.1
+  - estado : EstadoDocumentoElectronico
+  - codigoRespuesta : String
+  - concepto : ConceptoNotaCredito
+}
+
+class EventoDocumento {
+  - fecha : DateTime
+  - estado : EstadoDocumentoElectronico
+  - mensaje : String
+}
+
+enum EstadoDocumentoElectronico {
+  GENERADO
+  ACEPTADO
+  RECHAZADO
+}
+
+class Caja <<turno>> {
+  - cajero : Usuario
+  - fechaApertura : DateTime
+  - baseInicial : Entero (pesos)
+  - estado : EstadoCaja
+  - efectivoEsperado : Entero (pesos)
+  - efectivoContado : Entero (pesos)
+  - diferencia : Entero (pesos)
 }
 
 class Glosa {
@@ -231,6 +291,17 @@ Factura "*" --> "1" Convenio : copia condiciones
 Factura "1" *-- "*" PagoFactura : recibe
 Factura "1" *-- "*" Glosa : puede tener
 Pagador --> TipoPagador
+Ingreso "1" *-- "*" OrdenClinica : se solicita en
+OrdenClinica "*" --> "1" Procedimiento : pide
+OrdenClinica "*" --> "1" Medico : solicita
+OrdenClinica "1" *-- "*" ResultadoValor : resultado
+OrdenClinica --> EstadoOrden
+OrdenClinica "0..1" --> "1" ProcedimientoRealizado : al resultado carga
+Factura "1" -- "*" DocumentoElectronico : factura electrónica y notas crédito
+DocumentoElectronico "1" *-- "*" EventoDocumento : historial
+DocumentoElectronico --> EstadoDocumentoElectronico
+DocumentoElectronico "0..*" --> "1" DocumentoElectronico : nota crédito referencia
+Caja "1" o-- "*" PagoFactura : recibos
 Glosa --> EstadoGlosa
 
 RegistroAuditoria "*" --> "1" Usuario : realizado por
@@ -250,6 +321,17 @@ note bottom of Convenio
   La tarifa del convenio se aplica al registrar el procedimiento (RN-14).
   La cuenta se reparte entre paciente y pagador (RN-15).
   Las glosas solo aplican a facturas radicadas (RN-18, RN-19).
+end note
+
+note bottom of OrdenClinica
+  El ingreso no se egresa con órdenes solicitadas sin resultado (RN-20).
+  Registrar el resultado carga el servicio a la cuenta al precio del convenio (RN-21).
+end note
+
+note bottom of DocumentoElectronico
+  La factura electrónica va al pagador por su parte y, si no hay pagador, al paciente.
+  Sin factura electrónica aceptada no se radica (RN-22); con ella se anula con nota crédito (RN-23).
+  Una caja abierta por cajero (RN-24); cobrar al paciente exige caja abierta (RN-25).
 end note
 
 note bottom of Paciente
