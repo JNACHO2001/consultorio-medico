@@ -13,10 +13,14 @@ from typing import Generic, Optional, TypeVar
 
 from app.domain.modelos import (
     AreaApoyo,
+    Caja,
     Cita,
     Consulta,
     Convenio,
+    DocumentoElectronico,
+    EstadoCaja,
     EstadoCita,
+    EstadoDocumentoElectronico,
     EstadoFactura,
     EstadoIngreso,
     EstadoOrden,
@@ -29,6 +33,7 @@ from app.domain.modelos import (
     Procedimiento,
     ProcedimientoRealizado,
     Recordatorio,
+    TipoDocumentoElectronico,
     RegistroAuditoria,
     Usuario,
 )
@@ -195,3 +200,23 @@ class IOrdenRepository(IRepository[OrdenClinica]):
         medico_id: Optional[int] = None,
     ) -> list[OrdenClinica]:
         """Órdenes que cumplen los filtros, de la más reciente a la más antigua."""
+
+
+class IDocumentoElectronicoRepository(IRepository[DocumentoElectronico]):
+    @abstractmethod
+    def buscar(
+        self,
+        factura_id: Optional[int] = None,
+        tipo: Optional[TipoDocumentoElectronico] = None,
+        estado: Optional[EstadoDocumentoElectronico] = None,
+    ) -> list[DocumentoElectronico]:
+        """Documentos que cumplen los filtros, del más reciente al más antiguo."""
+
+
+class ICajaRepository(IRepository[Caja]):
+    @abstractmethod
+    def obtener_abierta_de(self, cajero_id: int) -> Optional[Caja]: ...
+
+    @abstractmethod
+    def buscar(self, cajero_id: Optional[int] = None, estado: Optional[EstadoCaja] = None) -> list[Caja]:
+        """Turnos de caja, del más reciente al más antiguo."""
