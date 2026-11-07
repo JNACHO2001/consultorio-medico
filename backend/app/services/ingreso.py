@@ -1,6 +1,7 @@
 """Ingreso del paciente, procedimientos y egreso (RF-15, RF-16)."""
 from __future__ import annotations
 
+import re
 import threading
 from typing import Optional
 
@@ -22,8 +23,10 @@ from app.repositories.interfaces import (
     IUsuarioRepository,
 )
 from app.services.catalogo import CatalogoService
+from app.services.convenios import ConvenioService, calcular_precio
 
 CANTIDAD_MAXIMA = 99
+_PATRON_CIE10 = re.compile(r"^[A-Z][0-9]{2}[0-9A-Z]?$")
 
 
 class IngresoService:
@@ -35,7 +38,9 @@ class IngresoService:
         pacientes: IPacienteRepository,
         usuarios: IUsuarioRepository,
         config: Configuracion,
+        convenios: ConvenioService,
     ) -> None:
+        self._convenios = convenios
         self._ingresos = ingresos
         self._realizados = realizados
         self._catalogo = catalogo
@@ -47,9 +52,20 @@ class IngresoService:
     # ------------------------------------------------------------------ ingreso
 
     def admitir(
-        self, paciente_id: int, medico_id: int, tipo: TipoIngreso, motivo: str, usuario: Usuario
+        self,
+        paciente_id: int,
+        medico_id: int,
+        tipo: TipoIngreso,
+        motivo: str,
+        usuario: Usuario,
+        convenio_id: Optional[int] = None,
+        numero_autorizacion: str = "",
     ) -> Ingreso:
-        """Abre el ingreso del paciente con un médico tratante (RN-08: solo uno abierto a la vez)."""
+        """Abre el ingreso del paciente con un médico tratante (RN-08: solo uno abierto a la vez).
+
+        Sin convenio se admite como particular. Si el convenio exige autorización (RN-16),
+        el número de autorización es obligatorio.
+        """
         motivo = (motivo or "").strip()
         if not motivo:
             raise ReglaNegocio("El motivo del ingreso es obligatorio.")
@@ -58,6 +74,14 @@ class IngresoService:
         medico = self._usuarios.obtener_por_id(medico_id)
         if medico is None or medico.rol != Rol.MEDICO:
             raise NoEncontrado("El médico no existe.")
+        convenio = (
+            self._convenios.obtener_convenio(convenio_id, incluir_inactivo=False)
+            if convenio_id is not None
+            else self._convenios.particular()
+        )
+        numero_autorizacion = (numero_autorizacion or "").strip()
+        if convenio.requiere_autorizacion and not numero_autorizacion:
+            raise ReglaNegocio("Este convenio exige número de autorización para admitir al paciente.")
         with self._lock:
             abierto = self._ingresos.obtener_abierto_por_paciente(paciente_id)
             if abierto is not None:
@@ -73,6 +97,8 @@ class IngresoService:
                     motivo=motivo,
                     fecha_ingreso=ahora_local(self._config.zona_horaria),
                     admitido_por_id=usuario.id,
+                    convenio_id=convenio.id,
+                    numero_autorizacion=numero_autorizacion,
                 )
             )
 
@@ -115,6 +141,9 @@ class IngresoService:
         with self._lock:
             ingreso = self._propio_abierto(ingreso_id, medico, "registrar procedimientos")
             catalogo = self._catalogo.obtener(procedimiento_id)
+            convenio = (
+                self._convenios.obtener_convenio(ingreso.convenio_id) if ingreso.convenio_id is not None else None
+            )
             return self._realizados.agregar(
                 ProcedimientoRealizado(
                     ingreso_id=ingreso.id,
@@ -123,12 +152,24 @@ class IngresoService:
                     procedimiento_id=catalogo.id,
                     codigo=catalogo.codigo,
                     nombre=catalogo.nombre,
+                    cups=catalogo.cups,
+                    tipo_servicio=catalogo.tipo_servicio,
                     cantidad=cantidad,
-                    valor_unitario=catalogo.tarifa,
+                    valor_unitario=calcular_precio(catalogo.tarifa, convenio),
                     fecha_hora=ahora_local(self._config.zona_horaria),
                     observaciones=(observaciones or "").strip(),
                 )
             )
+
+    def registrar_diagnostico(self, ingreso_id: int, medico: Usuario, codigo_cie10: str) -> Ingreso:
+        """El médico tratante fija el diagnóstico principal (CIE-10) que el RIPS necesita."""
+        codigo = (codigo_cie10 or "").strip().upper()
+        if not _PATRON_CIE10.match(codigo):
+            raise ReglaNegocio("El diagnóstico debe ser un código CIE-10 sin punto, por ejemplo J00 o K297.")
+        with self._lock:
+            ingreso = self._propio_abierto(ingreso_id, medico, "registrar el diagnóstico")
+            ingreso.diagnostico_principal = codigo
+            return self._ingresos.actualizar(ingreso)
 
     def anular_procedimiento(
         self, ingreso_id: int, realizado_id: int, medico: Usuario, motivo: str
