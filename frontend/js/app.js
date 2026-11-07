@@ -14,6 +14,8 @@ import { montarConvenios } from "./vistas/convenios.js";
 import { montarCartera } from "./vistas/cartera.js";
 import { montarRips } from "./vistas/rips.js";
 import { montarLaboratorio } from "./vistas/laboratorio.js";
+import { montarElectronica } from "./vistas/electronica.js";
+import { montarCaja } from "./vistas/caja.js";
 
 const raiz = document.getElementById("app");
 
@@ -27,6 +29,8 @@ const RUTAS = {
   ingreso: { titulo: "Cuenta del ingreso", roles: ["RECEPCION", "MEDICO"], montar: montarIngreso, oculta: true, padre: "ingresos" },
   laboratorio: { titulo: "Apoyo diagnóstico", roles: ["LABORATORIO"], montar: montarLaboratorio },
   facturas: { titulo: "Facturación", roles: ["RECEPCION", "ADMINISTRADOR"], montar: montarFacturas },
+  caja: { titulo: "Caja", roles: ["RECEPCION", "ADMINISTRADOR"], montar: montarCaja },
+  electronica: { titulo: "Facturación electrónica", roles: ["RECEPCION", "ADMINISTRADOR"], montar: montarElectronica },
   cartera: { titulo: "Cartera y glosas", roles: ["RECEPCION", "ADMINISTRADOR"], montar: montarCartera },
   convenios: { titulo: "Pagadores y convenios", roles: ["ADMINISTRADOR"], montar: montarConvenios },
   rips: { titulo: "RIPS", roles: ["ADMINISTRADOR"], montar: montarRips },
