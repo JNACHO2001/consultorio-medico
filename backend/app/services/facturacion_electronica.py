@@ -105,7 +105,7 @@ class FacturacionElectronicaService:
     # ------------------------------------------------------------------ emisión
 
     def emitir(self, factura_id: int, usuario: Usuario) -> DocumentoElectronico:
-        """Genera la factura electrónica de una factura y la envía al proveedor (RN-20)."""
+        """Genera la factura electrónica de una factura y la envía al proveedor (RN-22)."""
         with self._lock:
             factura = self._facturacion.obtener(factura_id)
             if factura.estado == EstadoFactura.ANULADA:
