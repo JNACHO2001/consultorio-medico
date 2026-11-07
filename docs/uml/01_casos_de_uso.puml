@@ -16,6 +16,7 @@ title Diagrama de casos de uso\nSistema de Gestión "Salud Integral"
 actor "Recepcionista" as REC
 actor "Médico" as MED
 actor "Administrador" as ADM
+actor "Apoyo diagnóstico\n(laboratorio)" as LAB
 
 rectangle "Sistema de Gestión – Salud Integral" {
   usecase "CU-02\nRegistrar paciente" as CU02
@@ -37,6 +38,10 @@ rectangle "Sistema de Gestión – Salud Integral" {
   usecase "CU-17\nGestionar pagadores\ny convenios" as CU17
   usecase "CU-18\nGestionar cartera:\nradicar, abonos y glosas" as CU18
   usecase "CU-19\nGenerar borrador\nde RIPS" as CU19
+  usecase "CU-20\nSolicitar órdenes\ny diagnóstico CIE-10" as CU20
+  usecase "CU-21\nRegistrar resultados\nde apoyo diagnóstico" as CU21
+  usecase "CU-22\nEmitir factura electrónica\ny notas crédito" as CU22
+  usecase "CU-23\nGestionar caja\ny recibos" as CU23
 }
 
 actor "Servicio de\nnotificaciones" as NOT <<sistema externo>>
@@ -49,8 +54,12 @@ REC --> CU03
 REC --> CU13
 REC --> CU15
 REC --> CU18
+REC --> CU22
+REC --> CU23
 
 MED --> CU14
+MED --> CU20
+MED --> CU21
 MED --> CU06
 MED --> CU07
 MED --> CU03
@@ -62,6 +71,10 @@ ADM --> CU16
 ADM --> CU17
 ADM --> CU18
 ADM --> CU19
+ADM --> CU22
+ADM --> CU23
+
+LAB --> CU21
 
 CU04 ..> CU03 : <<include>>
 CU04 ..> CU10 : <<include>>
@@ -72,12 +85,20 @@ CU14 ..> CU08 : <<extend>>
 CU13 ..> CU17 : <<include>>
 CU18 ..> CU15 : <<extend>>
 CU19 ..> CU18 : <<include>>
+CU21 ..> CU14 : <<include>>
+CU18 ..> CU22 : <<include>>
+CU15 ..> CU23 : <<include>>
 
 CU10 <-- NOT
 
 note right of CU15
   El administrador consulta las facturas y gestiona su cartera.
   Cada procedimiento se factura una sola vez.
+end note
+
+note right of CU22
+  Proveedor tecnológico SIMULADO: CUFE/CUDE y XML UBL 2.1
+  simplificado, sin firma electrónica ni transmisión a la DIAN.
 end note
 
 note right of CU01
