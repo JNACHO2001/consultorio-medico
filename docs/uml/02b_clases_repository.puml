@@ -65,6 +65,34 @@ class CarteraService <<servicio>> {
   + resumen() : List<ResumenCartera>
 }
 
+class OrdenService <<servicio>> {
+  + crear(ingresoId, procedimientoId, prioridad, indicacion) : OrdenClinica
+  + registrarResultado(ordenId, valores, observaciones) : OrdenClinica
+  + anular(ordenId, motivo) : OrdenClinica
+}
+
+class Cie10Service <<servicio>> {
+  + buscar(texto) : List<Cie10>
+}
+
+class FacturacionElectronicaService <<servicio>> {
+  + emitir(facturaId) : DocumentoElectronico
+  + reintentar(documentoId) : DocumentoElectronico
+  + emitirNotaCredito(facturaId, concepto, motivo, glosaId) : DocumentoElectronico
+  + anularConNotaCredito(facturaId, motivo) : Factura
+}
+
+interface IProveedorTecnologico <<adaptador>> {
+  + enviar(documento) : RespuestaProveedor
+}
+class ProveedorSimulado <<implementación>>
+
+class CajaService <<servicio>> {
+  + abrir(cajero, baseInicial) : Caja
+  + cerrar(cajaId, cajero, efectivoContado, observaciones) : Caja
+  + nuevoRecibo() : String
+}
+
 class RipsService <<servicio>> {
   + generar(desde, hasta, pagadorId) : BorradorRips
 }
@@ -117,6 +145,19 @@ interface IFacturaRepository {
   + buscar(estado, pacienteId, ingresoId) : List<Factura>
 }
 
+interface IOrdenRepository {
+  + buscar(estado, ingresoId, pacienteId, area, medicoId) : List<OrdenClinica>
+}
+
+interface IDocumentoElectronicoRepository {
+  + buscar(facturaId, tipo, estado) : List<DocumentoElectronico>
+}
+
+interface ICajaRepository {
+  + obtenerAbiertaDe(cajeroId) : Caja
+  + buscar(cajeroId, estado) : List<Caja>
+}
+
 interface IPagadorRepository {
   + obtenerPorCodigo(codigo) : Pagador
 }
@@ -162,6 +203,9 @@ class MemoryIngresoRepository <<implementación>>
 class MemoryProcedimientoRealizadoRepository <<implementación>>
 class MemoryFacturaRepository <<implementación>>
 class MemoryProcedimientoRepository <<implementación>>
+class MemoryOrdenRepository <<implementación>>
+class MemoryDocumentoElectronicoRepository <<implementación>>
+class MemoryCajaRepository <<implementación>>
 
 class "Listas de objetos en memoria\n(base de datos del prototipo)" as BD <<almacén>>
 
@@ -186,6 +230,17 @@ CarteraService ..> IFacturaRepository
 RipsService ..> IFacturaRepository
 RipsService ..> IIngresoRepository
 CatalogoService ..> IProcedimientoRepository
+OrdenService ..> IOrdenRepository
+OrdenService ..> IngresoService : carga el servicio al resultado
+IngresoService ..> IOrdenRepository : bloquea el egreso
+FacturacionElectronicaService ..> IDocumentoElectronicoRepository
+FacturacionElectronicaService ..> FacturacionService
+FacturacionElectronicaService ..> IProveedorTecnologico
+ProveedorSimulado ..|> IProveedorTecnologico
+CajaService ..> ICajaRepository
+FacturacionService ..> CajaService : recibo y caja del cobro
+CarteraService ..> CajaService : recibo del abono
+CarteraService ..> IDocumentoElectronicoRepository : exige factura aceptada
 
 ' Interfaz genérica común (T = entidad)
 IPacienteRepository --|> IRepository
@@ -198,6 +253,9 @@ IProcedimientoRealizadoRepository --|> IRepository
 IFacturaRepository --|> IRepository
 IProcedimientoRepository --|> IRepository
 IPagadorRepository --|> IRepository
+IOrdenRepository --|> IRepository
+IDocumentoElectronicoRepository --|> IRepository
+ICajaRepository --|> IRepository
 IConvenioRepository --|> IRepository
 
 ' Implementaciones
