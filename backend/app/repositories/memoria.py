@@ -19,6 +19,7 @@ from typing import Generic, Optional, TypeVar
 from app.core.auditoria import auditar as _auditar
 from app.domain.excepciones import NoEncontrado
 from app.domain.modelos import (
+    AreaApoyo,
     Cita,
     Consulta,
     Convenio,
@@ -26,10 +27,12 @@ from app.domain.modelos import (
     EstadoCita,
     EstadoFactura,
     EstadoIngreso,
+    EstadoOrden,
     EstadoRecordatorio,
     Factura,
     Ingreso,
     NotaAclaratoria,
+    OrdenClinica,
     Pagador,
     Paciente,
     Procedimiento,
@@ -45,6 +48,7 @@ from app.repositories.interfaces import (
     IConvenioRepository,
     IFacturaRepository,
     IIngresoRepository,
+    IOrdenRepository,
     IPacienteRepository,
     IPagadorRepository,
     IProcedimientoRealizadoRepository,
@@ -533,4 +537,51 @@ class MemoryFacturaRepository(MemoryRepository[Factura], IFacturaRepository):
             ]
         encontradas.sort(key=lambda f: f.id, reverse=True)
         _auditar(self._auditoria, "Factura", "LISTADO")
+        return encontradas
+
+
+class MemoryOrdenRepository(MemoryRepository[OrdenClinica], IOrdenRepository):
+    """Las órdenes y sus resultados son datos clínicos: cada acceso queda en la bitácora."""
+
+    def __init__(self, auditoria: IAuditoriaRepository) -> None:
+        super().__init__()
+        self._auditoria = auditoria
+
+    def agregar(self, entidad: OrdenClinica) -> OrdenClinica:
+        nueva = super().agregar(entidad)
+        _auditar(self._auditoria, "Orden", "CREACION", nueva.id)
+        return nueva
+
+    def obtener_por_id(self, id: int) -> Optional[OrdenClinica]:
+        orden = super().obtener_por_id(id)
+        if orden is not None:
+            _auditar(self._auditoria, "Orden", "LECTURA", id)
+        return orden
+
+    def actualizar(self, entidad: OrdenClinica) -> OrdenClinica:
+        actualizada = super().actualizar(entidad)
+        _auditar(self._auditoria, "Orden", "MODIFICACION", actualizada.id)
+        return actualizada
+
+    def buscar(
+        self,
+        estado: Optional[EstadoOrden] = None,
+        ingreso_id: Optional[int] = None,
+        paciente_id: Optional[int] = None,
+        area: Optional[AreaApoyo] = None,
+        medico_id: Optional[int] = None,
+    ) -> list[OrdenClinica]:
+        with self._lock:
+            encontradas = [
+                copy.deepcopy(o)
+                for o in self._items
+                if o.activo
+                and (estado is None or o.estado == estado)
+                and (ingreso_id is None or o.ingreso_id == ingreso_id)
+                and (paciente_id is None or o.paciente_id == paciente_id)
+                and (area is None or o.area == area)
+                and (medico_id is None or o.medico_id == medico_id)
+            ]
+        encontradas.sort(key=lambda o: (o.fecha or datetime.min, o.id), reverse=True)
+        _auditar(self._auditoria, "Orden", "LECTURA_MULTIPLE", ingreso_id or paciente_id or 0)
         return encontradas
