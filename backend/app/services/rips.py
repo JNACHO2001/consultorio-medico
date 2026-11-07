@@ -13,9 +13,10 @@ from typing import Any, Optional
 from app.config import Configuracion
 from app.core.auditoria import auditar
 from app.domain.excepciones import ReglaNegocio
-from app.domain.modelos import EstadoFactura, Factura, TipoServicio
+from app.domain.modelos import EstadoDocumentoElectronico, EstadoFactura, Factura, TipoDocumentoElectronico, TipoServicio
 from app.repositories.interfaces import (
     IAuditoriaRepository,
+    IDocumentoElectronicoRepository,
     IFacturaRepository,
     IIngresoRepository,
     IPacienteRepository,
@@ -40,7 +41,9 @@ class RipsService:
         pacientes: IPacienteRepository,
         auditoria: IAuditoriaRepository,
         config: Configuracion,
+        documentos: IDocumentoElectronicoRepository,
     ) -> None:
+        self._documentos = documentos
         self._facturas = facturas
         self._ingresos = ingresos
         self._realizados = realizados
@@ -106,6 +109,16 @@ class RipsService:
             problema("ERROR", "SIN_DIAGNOSTICO", "El ingreso no tiene diagnóstico principal CIE-10.")
         if not factura.radicada:
             problema("AVISO", "NO_RADICADA", "La factura aún no se ha radicado al pagador.")
+        electronica = next(
+            (
+                d
+                for d in self._documentos.buscar(factura_id=factura.id, tipo=TipoDocumentoElectronico.FACTURA)
+                if d.estado == EstadoDocumentoElectronico.ACEPTADO
+            ),
+            None,
+        )
+        if electronica is None and self._config.dian_obligatoria:
+            problema("AVISO", "SIN_FACTURA_ELECTRONICA", "La factura no tiene factura electrónica aceptada.")
 
         usuario: dict[str, Any] = {}
         if paciente is None:
@@ -145,7 +158,8 @@ class RipsService:
             )
 
         registro = {
-            "numFactura": factura.numero,
+            "numFactura": electronica.numero if electronica else factura.numero,
+            "cufe": electronica.cufe if electronica else None,
             "fechaFactura": factura.fecha.isoformat() if factura.fecha else None,
             "pagador": {"codigo": factura.pagador_codigo, "nombre": factura.pagador_nombre},
             "convenio": factura.convenio_nombre,
