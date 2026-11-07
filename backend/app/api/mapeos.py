@@ -3,19 +3,27 @@ from typing import Optional
 
 from app.api.schemas import (
     AgendaItemOut,
+    CajaDetalleOut,
+    CajaOut,
     ConsultaOut,
+    DocumentoElectronicoOut,
+    DocumentoResumenOut,
     FacturaOut,
     IngresoDetalleOut,
     IngresoOut,
     OrdenOut,
     RealizadoOut,
+    ReciboOut,
     ResultadoValorOut,
 )
 from app.container import Contenedor
 from app.domain.excepciones import NoEncontrado
 from app.domain.modelos import (
+    Caja,
     Cita,
     Consulta,
+    DocumentoElectronico,
+    EstadoCaja,
     Factura,
     Ingreso,
     OrdenClinica,
@@ -126,6 +134,53 @@ def facturas_out(c: Contenedor, facturas: list[Factura]) -> list[FacturaOut]:
         salida.pagado_paciente = factura.pagado(OrigenPago.PACIENTE)
         salida.pagado_pagador = factura.pagado(OrigenPago.PAGADOR)
         salida.dias_radicada = c.cartera.edad_dias(factura)
+        electronica = c.electronica.factura_electronica(factura.id)
+        salida.factura_electronica = DocumentoResumenOut.model_validate(electronica) if electronica else None
+        salida.notas_credito = [
+            DocumentoResumenOut.model_validate(n) for n in c.electronica.notas_credito(factura.id)
+        ]
+        salida.dian_obligatoria = c.config.dian_obligatoria
+        resultado.append(salida)
+    return resultado
+
+
+def documentos_out(c: Contenedor, documentos: list[DocumentoElectronico]) -> list[DocumentoElectronicoOut]:
+    facturas = {d.factura_id: c.facturacion.obtener(d.factura_id) for d in documentos}
+    pacientes = _pacientes_por_id(c, {f.paciente_id for f in facturas.values()})
+    resultado = []
+    for d in documentos:
+        salida = DocumentoElectronicoOut.model_validate(d)
+        factura = facturas[d.factura_id]
+        salida.factura_numero = factura.numero
+        paciente = pacientes.get(factura.paciente_id)
+        salida.paciente_nombre = paciente.nombre_completo if paciente else ""
+        resultado.append(salida)
+    return resultado
+
+
+def cajas_out(c: Contenedor, cajas: list[Caja], con_recibos: bool = False) -> list:
+    cajeros = _nombres_de_usuarios(c, {x.cajero_id for x in cajas})
+    resultado = []
+    for caja in cajas:
+        resumen = c.cajas.resumen(caja)
+        salida = (CajaDetalleOut if con_recibos else CajaOut).model_validate(caja)
+        salida.cajero_nombre = cajeros.get(caja.cajero_id, "")
+        salida.n_recibos = resumen.n_recibos
+        salida.total_recibido = resumen.total
+        salida.efectivo_esperado_actual = resumen.efectivo_esperado
+        if caja.estado == EstadoCaja.ABIERTA:
+            salida.por_metodo = resumen.por_metodo
+        if con_recibos:
+            recibos = c.cajas.recibos(caja.id)
+            pacientes = _pacientes_por_id(c, {f.paciente_id for f, _ in recibos})
+            salida.recibos = [
+                ReciboOut(
+                    recibo_numero=p.recibo_numero, factura_id=f.id, factura_numero=f.numero, origen=p.origen,
+                    metodo=p.metodo, valor=p.valor, fecha=p.fecha, referencia=p.referencia,
+                    paciente_nombre=pacientes[f.paciente_id].nombre_completo if f.paciente_id in pacientes else "",
+                )
+                for f, p in recibos
+            ]
         resultado.append(salida)
     return resultado
 
