@@ -289,3 +289,32 @@ dialog.ancho { width: min(760px, calc(100vw - 2rem)); }
   .franja .contenido { animation: aparece .15s ease-out; }
   @keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
 }
+
+/* ---------- pagadores, cartera, glosas y RIPS ---------- */
+[hidden] { display: none !important; }
+.etiqueta { display: inline-block; margin-left: .4rem; padding: .05rem .55rem; border-radius: 99px; background: var(--pino-claro); color: var(--pino-oscuro); font-size: .8rem; font-weight: 700; vertical-align: middle; }
+.pagador-cabecera { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: .6rem 1rem; margin-bottom: .8rem; }
+.pagador-cabecera h2 { margin: 0; }
+.pagador-cabecera p { margin: .15rem 0 0; }
+.casilla { display: flex; align-items: center; gap: .6rem; margin-bottom: .9rem; font-weight: 700; cursor: pointer; }
+.casilla input { width: 22px; min-height: 22px; height: 22px; }
+.desglose { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1rem; }
+.bloque-saldo { border: 1px solid var(--linea); border-radius: var(--radio); padding: .8rem 1rem; background: #fbfcfc; }
+.bloque-saldo h3 { margin-bottom: .5rem; font-size: .98rem; }
+.fila-saldo { display: flex; justify-content: space-between; gap: 1rem; padding: .2rem 0; }
+.fila-saldo.fuerte { border-top: 1px solid var(--linea); margin-top: .3rem; padding-top: .45rem; font-size: 1.05rem; }
+.subseccion { margin-top: 1.2rem; padding-top: 1rem; border-top: 2px solid var(--linea); }
+.subseccion h3 { margin-bottom: .6rem; }
+.subseccion h4 { margin: 1rem 0 .4rem; font-size: .98rem; }
+.glosas { list-style: none; margin: 0 0 .8rem; padding: 0; display: grid; gap: .6rem; }
+.glosa { border: 1.5px solid var(--linea); border-left: 6px solid #c99400; border-radius: var(--radio); padding: .6rem .9rem; background: #fff; }
+.glosa p { margin: .25rem 0 0; }
+.glosa-cabecera { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .5rem; }
+.glosa-cabecera .sello { margin-left: auto; }
+.sello.abierta { color: var(--aviso); background: #fff; }
+.sello.respondida { color: var(--programada); background: #fff; }
+.sello.aceptada { color: var(--cancelada); background: #fff; }
+.sello.levantada { color: var(--atendida); background: #fff; }
+td.vencida { color: var(--cancelada); font-weight: 700; }
+table tfoot th { position: static; background: #f6f9f8; color: var(--tinta); }
+.sin-corte th, .sin-corte td { white-space: nowrap; }
