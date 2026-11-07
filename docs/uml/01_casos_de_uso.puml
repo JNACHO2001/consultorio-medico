@@ -34,6 +34,9 @@ rectangle "Sistema de Gestión – Salud Integral" {
   usecase "CU-14\nRegistrar procedimiento\nrealizado" as CU14
   usecase "CU-15\nFacturar y cobrar\nprocedimientos" as CU15
   usecase "CU-16\nGestionar catálogo\ny tarifas" as CU16
+  usecase "CU-17\nGestionar pagadores\ny convenios" as CU17
+  usecase "CU-18\nGestionar cartera:\nradicar, abonos y glosas" as CU18
+  usecase "CU-19\nGenerar borrador\nde RIPS" as CU19
 }
 
 actor "Servicio de\nnotificaciones" as NOT <<sistema externo>>
@@ -45,6 +48,7 @@ REC --> CU06
 REC --> CU03
 REC --> CU13
 REC --> CU15
+REC --> CU18
 
 MED --> CU14
 MED --> CU06
@@ -55,6 +59,9 @@ MED --> CU08
 ADM --> CU11
 ADM --> CU12
 ADM --> CU16
+ADM --> CU17
+ADM --> CU18
+ADM --> CU19
 
 CU04 ..> CU03 : <<include>>
 CU04 ..> CU10 : <<include>>
@@ -62,11 +69,14 @@ CU07 ..> CU08 : <<include>>
 CU09 .up.> CU07 : <<extend>>
 CU13 ..> CU03 : <<include>>
 CU14 ..> CU08 : <<extend>>
+CU13 ..> CU17 : <<include>>
+CU18 ..> CU15 : <<extend>>
+CU19 ..> CU18 : <<include>>
 
 CU10 <-- NOT
 
 note right of CU15
-  El administrador solo consulta las facturas.
+  El administrador consulta las facturas y gestiona su cartera.
   Cada procedimiento se factura una sola vez.
 end note
 
