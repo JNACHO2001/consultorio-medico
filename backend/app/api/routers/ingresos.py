@@ -6,6 +6,7 @@ from app.api.deps import contenedor, requiere_roles
 from app.api.mapeos import ingresos_out, realizados_out
 from app.api.schemas import (
     AnulacionIn,
+    DiagnosticoIn,
     EgresoIn,
     IngresoDetalleOut,
     IngresoIn,
@@ -32,7 +33,15 @@ def _detalle(c: Contenedor, ingreso_id: int, usuario: Usuario) -> IngresoDetalle
 def admitir(
     datos: IngresoIn, c: Contenedor = Depends(contenedor), usuario: Usuario = Depends(_recepcion)
 ) -> IngresoDetalleOut:
-    ingreso = c.ingresos.admitir(datos.paciente_id, datos.medico_id, datos.tipo, datos.motivo, usuario)
+    ingreso = c.ingresos.admitir(
+        datos.paciente_id,
+        datos.medico_id,
+        datos.tipo,
+        datos.motivo,
+        usuario,
+        datos.convenio_id,
+        datos.numero_autorizacion,
+    )
     return _detalle(c, ingreso.id, usuario)
 
 
@@ -87,6 +96,17 @@ def anular_procedimiento(
 ) -> RealizadoOut:
     realizado = c.ingresos.anular_procedimiento(ingreso_id, realizado_id, medico, datos.motivo)
     return realizados_out(c, [realizado], clinico=True)[0]
+
+
+@router.put("/{ingreso_id}/diagnostico", response_model=IngresoDetalleOut, summary="Registrar el diagnóstico principal (CIE-10)")
+def registrar_diagnostico(
+    ingreso_id: int,
+    datos: DiagnosticoIn,
+    c: Contenedor = Depends(contenedor),
+    medico: Usuario = Depends(_medico),
+) -> IngresoDetalleOut:
+    c.ingresos.registrar_diagnostico(ingreso_id, medico, datos.codigo_cie10)
+    return _detalle(c, ingreso_id, medico)
 
 
 @router.post("/{ingreso_id}/egreso", response_model=IngresoDetalleOut, summary="Dar el egreso (alta) al paciente")
