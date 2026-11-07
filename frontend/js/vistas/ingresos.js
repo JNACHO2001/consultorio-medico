@@ -1,9 +1,10 @@
 import { api } from "../api.js";
 import {
-  abrirDialogo, alerta, anexar, areaTexto, aviso, campo, confirmar, datosDe, entrada, fechaHora, h, pesos, seleccion, sello, TIPOS_INGRESO,
+  abrirDialogo, alerta, anexar, areaTexto, aviso, campo, confirmar, datosDe, debounce, entrada, fechaHora, h, pesos, seleccion, sello, TIPOS_INGRESO,
 } from "../ui.js";
 import { abrirAdmision } from "./admision.js";
 import { abrirFactura } from "./facturas.js";
+import { abrirResultado, tablaOrdenes } from "./ordenes.js";
 import { vacio } from "./pacientes.js";
 
 // ------------------------------------------------------------------ lista de ingresos
@@ -58,9 +59,10 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
 
   async function pintar() {
     const ingreso = await api.get(`/api/ingresos/${id}`);
-    const [paciente, facturas] = await Promise.all([
+    const [paciente, facturas, ordenes] = await Promise.all([
       api.get(`/api/pacientes/${ingreso.paciente_id}`),
       esMedico ? [] : api.get("/api/facturas", { ingreso_id: id }),
+      esMedico ? api.get("/api/ordenes", { ingreso_id: id }) : [],
     ]);
     const propio = esMedico && ingreso.medico_id === usuario.id;
     const abierto = ingreso.estado === "ABIERTO";
@@ -70,6 +72,7 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
     if (propio && abierto) {
       acciones.push(
         h("button", { class: "btn btn-primario", type: "button", onclick: () => registrar(ingreso) }, "Registrar procedimiento"),
+        h("button", { class: "btn", type: "button", onclick: () => ordenar(ingreso) }, "Nueva orden"),
         h("button", { class: "btn", type: "button", onclick: () => diagnostico(ingreso) }, ingreso.diagnostico_principal ? "Cambiar diagnóstico" : "Registrar diagnóstico"),
         h("button", { class: "btn", type: "button", onclick: () => egreso(ingreso) }, "Dar egreso"));
     }
@@ -90,10 +93,11 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
           dato("Médico tratante", ingreso.medico_nombre), dato("Motivo", ingreso.motivo),
           dato("Pagador", ingreso.pagador_nombre ? `${ingreso.pagador_nombre} · ${ingreso.convenio_nombre}` : ""),
           ingreso.numero_autorizacion ? dato("Autorización", ingreso.numero_autorizacion) : null,
-          esMedico ? dato("Diagnóstico principal (CIE-10)", ingreso.diagnostico_principal) : null,
+          esMedico ? dato("Diagnóstico principal (CIE-10)", ingreso.diagnostico_principal ? `${ingreso.diagnostico_principal} · ${ingreso.diagnostico_descripcion || ""}` : "") : null,
           ingreso.fecha_egreso ? dato("Fecha de egreso", fechaHora(ingreso.fecha_egreso)) : null,
           ingreso.resumen_egreso ? dato("Resumen de egreso", ingreso.resumen_egreso) : null)),
       cuenta(ingreso, propio && abierto),
+      esMedico ? panelOrdenes(ingreso, ordenes, propio && abierto) : null,
       esMedico ? null : panelFacturas(facturas)]);
   }
 
@@ -125,6 +129,19 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
       h("div", { class: "totales" },
         h("div", {}, h("small", {}, "Total de la cuenta"), h("b", { class: "num" }, pesos(ingreso.total))),
         h("div", {}, h("small", {}, "Pendiente por facturar"), h("b", { class: "num" }, pesos(ingreso.pendiente_facturar)))));
+  }
+
+  function panelOrdenes(ingreso, ordenes, puedeOperar) {
+    return h("section", { class: "panel" },
+      h("h2", {}, "Órdenes y resultados"),
+      ordenes.length
+        ? tablaOrdenes(ordenes, {
+          acciones: (o) => [
+            o.estado === "REALIZADA" ? h("button", { class: "btn btn-pequeno btn-primario", type: "button", onclick: () => abrirResultado(o) }, "Ver resultado") : null,
+            o.estado === "SOLICITADA" && puedeOperar ? h("button", { class: "btn btn-pequeno btn-peligro", type: "button", onclick: () => anularOrden(o) }, "Anular") : null,
+          ],
+        })
+        : vacio("Aún no hay órdenes. Use «Nueva orden» para pedir laboratorio, imágenes o un electrocardiograma."));
   }
 
   function panelFacturas(facturas) {
@@ -201,12 +218,28 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
       construir: (cuerpo, cerrar) => {
         const mensaje = h("div");
         const boton = h("button", { class: "btn btn-primario", type: "submit" }, "Guardar diagnóstico");
+        const codigo = entrada("codigo_cie10", { valor: ingreso.diagnostico_principal || "", requerido: true, maxlength: 4, pattern: "[A-Za-z][0-9]{2}[0-9A-Za-z]?", style: "text-transform:uppercase" });
+        const buscador = entrada("buscar", { tipo: "search", placeholder: "Escriba el diagnóstico o el código", "aria-label": "Buscar diagnóstico" });
+        const resultados = h("ul", { class: "resultados" });
+        async function buscar() {
+          const q = buscador.value.trim();
+          if (!q) return resultados.replaceChildren();
+          try {
+            const lista = await api.get("/api/cie10", { q });
+            resultados.replaceChildren(...(lista.length ? lista.slice(0, 8).map((d) => h("li", {},
+              h("button", { type: "button", onclick: () => { codigo.value = d.codigo; resultados.replaceChildren(h("li", { class: "suave pequeno" }, `Elegido: ${d.codigo} · ${d.descripcion}`)); } },
+                h("b", {}, d.codigo), h("span", {}, d.descripcion)))) : [h("li", { class: "suave" }, "Sin coincidencias. Puede escribir el código directamente.")]));
+          } catch (error) {
+            resultados.replaceChildren(h("li", {}, alerta(error)));
+          }
+        }
+        buscador.addEventListener("input", debounce(buscar, 250));
         const form = h("form", {
           onsubmit: async (e) => {
             e.preventDefault();
             boton.disabled = true;
             try {
-              await api.put(`/api/ingresos/${ingreso.id}/diagnostico`, { codigo_cie10: form.elements.codigo_cie10.value.trim().toUpperCase() });
+              await api.put(`/api/ingresos/${ingreso.id}/diagnostico`, { codigo_cie10: codigo.value.trim().toUpperCase() });
               cerrar();
               aviso("Diagnóstico registrado.");
               pintar();
@@ -217,9 +250,82 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
           },
         }, mensaje,
           h("p", {}, "Es el diagnóstico que se reporta en el RIPS de la atención."),
-          campo("Código CIE-10", entrada("codigo_cie10", { valor: ingreso.diagnostico_principal || "", requerido: true, maxlength: 4, pattern: "[A-Za-z][0-9]{2}[0-9A-Za-z]?", style: "text-transform:uppercase" }),
-            "Sin punto: J00 o K297."),
+          campo("Buscar en el catálogo CIE-10", buscador), resultados,
+          campo("Código CIE-10", codigo, "Sin punto: J00 o K297."),
           h("div", { class: "acciones derecha" }, h("button", { class: "btn", type: "button", onclick: cerrar }, "Cancelar"), boton));
+        cuerpo.append(form);
+      },
+    });
+  }
+
+  async function ordenar(ingreso) {
+    let catalogo;
+    try {
+      catalogo = (await api.get("/api/procedimientos")).filter((p) => p.area_apoyo !== "NINGUNA");
+    } catch (error) {
+      aviso(error.message, "error");
+      return;
+    }
+    abrirDialogo({
+      titulo: "Nueva orden",
+      construir: (cuerpo, cerrar) => {
+        const mensaje = h("div");
+        const boton = h("button", { class: "btn btn-primario", type: "submit" }, "Generar orden");
+        const form = h("form", {
+          onsubmit: async (e) => {
+            e.preventDefault();
+            boton.disabled = true;
+            const d = datosDe(form);
+            try {
+              await api.post("/api/ordenes", {
+                ingreso_id: ingreso.id, procedimiento_id: Number(d.procedimiento_id), cantidad: Number(d.cantidad),
+                prioridad: d.prioridad, indicacion: d.indicacion,
+              });
+              cerrar();
+              aviso("Orden enviada a apoyo diagnóstico.");
+              pintar();
+            } catch (error) {
+              mensaje.replaceChildren(alerta(error));
+              boton.disabled = false;
+            }
+          },
+        }, mensaje,
+          catalogo.length ? null : h("div", { class: "alerta info" }, "No hay servicios de apoyo diagnóstico en el catálogo."),
+          h("div", { class: "rejilla-campos" },
+            campo("Examen o servicio", seleccion("procedimiento_id", catalogo.map((p) => [p.id, `${p.nombre}`]), catalogo[0]?.id)),
+            campo("Prioridad", seleccion("prioridad", [["RUTINA", "Rutina"], ["URGENTE", "Urgente"]], "RUTINA")),
+            campo("Cantidad", entrada("cantidad", { tipo: "number", valor: 1, min: 1, max: 99, requerido: true }))),
+          campo("Indicación clínica", areaTexto("indicacion", "", { rows: 2, maxlength: 500 }), "Se la muestra a quien realiza el examen."),
+          h("p", { class: "suave pequeno" }, "El servicio se cobra en la cuenta cuando se registre el resultado."),
+          h("div", { class: "acciones derecha" }, h("button", { class: "btn", type: "button", onclick: cerrar }, "Cancelar"), boton));
+        cuerpo.append(form);
+      },
+    });
+  }
+
+  function anularOrden(o) {
+    abrirDialogo({
+      titulo: "Anular orden",
+      construir: (cuerpo, cerrar) => {
+        const mensaje = h("div");
+        const boton = h("button", { class: "btn btn-peligro", type: "submit" }, "Anular orden");
+        const form = h("form", {
+          onsubmit: async (e) => {
+            e.preventDefault();
+            boton.disabled = true;
+            try {
+              await api.post(`/api/ordenes/${o.id}/anular`, { motivo: form.elements.motivo.value.trim() });
+              cerrar();
+              aviso("Orden anulada.");
+              pintar();
+            } catch (error) {
+              mensaje.replaceChildren(alerta(error));
+              boton.disabled = false;
+            }
+          },
+        }, mensaje, h("p", {}, `${o.nombre}: la orden queda anulada y no se cobra.`),
+          campo("Motivo", areaTexto("motivo", "", { rows: 2, required: true, maxlength: 300 })),
+          h("div", { class: "acciones derecha" }, h("button", { class: "btn", type: "button", onclick: cerrar }, "Volver"), boton));
         cuerpo.append(form);
       },
     });
