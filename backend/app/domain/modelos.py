@@ -50,6 +50,27 @@ class EstadoFactura(str, Enum):
     ANULADA = "ANULADA"
 
 
+class TipoDocumentoElectronico(str, Enum):
+    FACTURA = "FACTURA"
+    NOTA_CREDITO = "NOTA_CREDITO"
+
+
+class EstadoDocumentoElectronico(str, Enum):
+    GENERADO = "GENERADO"  # creado localmente, aún sin respuesta del proveedor
+    ACEPTADO = "ACEPTADO"
+    RECHAZADO = "RECHAZADO"
+
+
+class ConceptoNotaCredito(str, Enum):
+    ANULACION = "ANULACION"  # deja sin efecto la factura completa
+    GLOSA = "GLOSA"  # descuenta una glosa que la IPS aceptó
+
+
+class EstadoCaja(str, Enum):
+    ABIERTA = "ABIERTA"
+    CERRADA = "CERRADA"
+
+
 class AreaApoyo(str, Enum):
     """Servicio de apoyo diagnóstico que realiza un procedimiento ordenado por el médico."""
 
@@ -348,6 +369,8 @@ class PagoFactura:
     fecha: datetime
     referencia: str = ""
     registrado_por_id: int = 0
+    recibo_numero: str = ""  # consecutivo del recibo de caja (RC-000001)
+    caja_id: Optional[int] = None  # turno de caja en que lo recibió el cajero
 
 
 @dataclass
@@ -484,3 +507,67 @@ class OrdenClinica(Entidad):
     registrado_por_id: Optional[int] = None
     realizado_id: Optional[int] = None  # cargo generado en la cuenta al registrar el resultado
     motivo_anulacion: str = ""
+
+
+@dataclass
+class EventoDocumento:
+    """Una línea del historial de estados de un documento electrónico."""
+
+    fecha: datetime
+    estado: EstadoDocumentoElectronico
+    mensaje: str = ""
+
+
+@dataclass
+class DocumentoElectronico(Entidad):
+    """Factura electrónica o nota crédito de una factura (RF-25, RF-26).
+
+    Lo que se genera aquí es el documento (numeración, CUFE/CUDE, XML UBL 2.1 y QR) y su
+    estado ante el proveedor tecnológico. El XML no lleva firma electrónica.
+    """
+
+    factura_id: int = 0
+    tipo: TipoDocumentoElectronico = TipoDocumentoElectronico.FACTURA
+    prefijo: str = ""
+    consecutivo: int = 0
+    fecha: Optional[datetime] = None
+    adquirente_tipo_documento: str = ""  # código DIAN: 13 cédula, 31 NIT, 22 extranjería...
+    adquirente_documento: str = ""
+    adquirente_dv: str = ""
+    adquirente_nombre: str = ""
+    adquirente_es_pagador: bool = False
+    valor_bruto: int = 0  # suma de las líneas (antes de descontar lo que paga el paciente)
+    valor: int = 0  # valor a pagar por el adquirente
+    cufe: str = ""  # CUFE (factura) o CUDE (nota crédito), SHA-384
+    xml: str = ""
+    qr: str = ""
+    estado: EstadoDocumentoElectronico = EstadoDocumentoElectronico.GENERADO
+    codigo_respuesta: str = ""
+    mensaje_respuesta: str = ""
+    intentos: int = 0
+    eventos: list[EventoDocumento] = field(default_factory=list)
+    # Solo para notas crédito
+    documento_referencia_id: Optional[int] = None
+    concepto: Optional[ConceptoNotaCredito] = None
+    motivo: str = ""
+    glosa_id: Optional[int] = None
+
+    @property
+    def numero(self) -> str:
+        return f"{self.prefijo}{self.consecutivo}"
+
+
+@dataclass
+class Caja(Entidad):
+    """Turno de caja de un cajero: se abre con una base y se cierra contando el efectivo (RF-27)."""
+
+    cajero_id: int = 0
+    fecha_apertura: Optional[datetime] = None
+    base_inicial: int = 0
+    estado: EstadoCaja = EstadoCaja.ABIERTA
+    fecha_cierre: Optional[datetime] = None
+    efectivo_esperado: Optional[int] = None
+    efectivo_contado: Optional[int] = None
+    diferencia: Optional[int] = None
+    observaciones: str = ""
+    por_metodo: dict[str, int] = field(default_factory=dict)  # instantánea al cerrar
