@@ -46,8 +46,8 @@ class Configuracion:
     dian_rango_hasta: int = 995000000
     dian_clave_tecnica: str = "fc8eac422eba16e22ffd8c6f94b3f40a6e38162c"
     dian_pin_software: str = "75315"
-    dian_obligatoria: bool = True  # RN-20: no se radica una factura sin factura electrónica aceptada
-    caja_obligatoria: bool = True  # RN-23: el cajero necesita una caja abierta para cobrar al paciente
+    dian_obligatoria: bool = True  # RN-22: no se radica una factura sin factura electrónica aceptada
+    caja_obligatoria: bool = True  # RN-25: el cajero necesita una caja abierta para cobrar al paciente
 
 
 def cargar_configuracion() -> Configuracion:
