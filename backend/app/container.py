@@ -11,9 +11,11 @@ from dataclasses import dataclass
 from app.config import Configuracion
 from app.repositories.interfaces import (
     IAuditoriaRepository,
+    ICajaRepository,
     ICitaRepository,
     IConsultaRepository,
     IConvenioRepository,
+    IDocumentoElectronicoRepository,
     IFacturaRepository,
     IIngresoRepository,
     IOrdenRepository,
@@ -26,9 +28,11 @@ from app.repositories.interfaces import (
 )
 from app.repositories.memoria import (
     MemoryAuditoriaRepository,
+    MemoryCajaRepository,
     MemoryCitaRepository,
     MemoryConsultaRepository,
     MemoryConvenioRepository,
+    MemoryDocumentoElectronicoRepository,
     MemoryFacturaRepository,
     MemoryIngresoRepository,
     MemoryOrdenRepository,
@@ -41,13 +45,16 @@ from app.repositories.memoria import (
 )
 from app.services.auditoria import AuditoriaService
 from app.services.autenticacion import AutenticacionService
+from app.services.caja import CajaService
 from app.services.catalogo import CatalogoService
 from app.services.cartera import CarteraService
 from app.services.cita import CitaService
 from app.services.cie10 import Cie10Service
 from app.services.consulta import ConsultaService
 from app.services.convenios import ConvenioService
+from app.services.dian import ProveedorSimulado
 from app.services.facturacion import FacturacionService
+from app.services.facturacion_electronica import FacturacionElectronicaService
 from app.services.ingreso import IngresoService
 from app.services.notificaciones import NotificacionService, NotificadorSimulado
 from app.services.ordenes import OrdenService
@@ -73,6 +80,8 @@ class Contenedor:
     repo_pagadores: IPagadorRepository
     repo_convenios: IConvenioRepository
     repo_ordenes: IOrdenRepository
+    repo_documentos: IDocumentoElectronicoRepository
+    repo_cajas: ICajaRepository
     # Servicios
     notificador: NotificadorSimulado
     notificaciones: NotificacionService
@@ -90,6 +99,8 @@ class Contenedor:
     rips: RipsService
     ordenes: OrdenService
     cie10: Cie10Service
+    cajas: CajaService
+    electronica: FacturacionElectronicaService
 
 
 def crear_contenedor(config: Configuracion) -> Contenedor:
@@ -106,6 +117,8 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
     repo_pagadores = MemoryPagadorRepository()
     repo_convenios = MemoryConvenioRepository()
     repo_ordenes = MemoryOrdenRepository(repo_auditoria)
+    repo_documentos = MemoryDocumentoElectronicoRepository()
+    repo_cajas = MemoryCajaRepository()
 
     notificador = NotificadorSimulado()
     notificaciones = NotificacionService(repo_recordatorios, notificador, config)
@@ -115,7 +128,14 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
     ingresos = IngresoService(
         repo_ingresos, repo_realizados, catalogo, repo_pacientes, repo_usuarios, config, convenios, repo_ordenes
     )
-    facturacion = FacturacionService(repo_facturas, repo_realizados, repo_ingresos, config, convenios)
+    cajas = CajaService(repo_cajas, repo_facturas, repo_auditoria, config)
+    facturacion = FacturacionService(
+        repo_facturas, repo_realizados, repo_ingresos, config, convenios, cajas, repo_documentos
+    )
+    electronica = FacturacionElectronicaService(
+        repo_documentos, facturacion, repo_pacientes, repo_realizados, convenios,
+        ProveedorSimulado(config), repo_auditoria, config,
+    )
 
     return Contenedor(
         config=config,
@@ -132,6 +152,8 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
         repo_pagadores=repo_pagadores,
         repo_convenios=repo_convenios,
         repo_ordenes=repo_ordenes,
+        repo_documentos=repo_documentos,
+        repo_cajas=repo_cajas,
         notificador=notificador,
         notificaciones=notificaciones,
         autenticacion=AutenticacionService(repo_usuarios, repo_auditoria, config),
@@ -144,10 +166,12 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
         ingresos=ingresos,
         facturacion=facturacion,
         convenios=convenios,
-        cartera=CarteraService(facturacion, repo_facturas, config),
+        cartera=CarteraService(facturacion, repo_facturas, config, cajas, repo_documentos),
         rips=RipsService(
-            repo_facturas, repo_ingresos, repo_realizados, repo_pacientes, repo_auditoria, config
+            repo_facturas, repo_ingresos, repo_realizados, repo_pacientes, repo_auditoria, config, repo_documentos
         ),
         ordenes=OrdenService(repo_ordenes, ingresos, catalogo, repo_auditoria, config),
         cie10=Cie10Service(),
+        cajas=cajas,
+        electronica=electronica,
     )
