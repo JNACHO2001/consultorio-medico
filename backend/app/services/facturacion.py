@@ -149,7 +149,7 @@ class FacturacionService:
                 raise ReglaNegocio(f"La factura está {factura.estado.value.lower()}: solo se pagan las emitidas.")
             if factura.saldo_paciente <= 0:
                 raise ReglaNegocio("El paciente no tiene saldo pendiente en esta factura.")
-            caja = self._cajas.caja_para_cobrar(usuario)  # RN-23
+            caja = self._cajas.caja_para_cobrar(usuario)  # RN-25
             ahora = ahora_local(self._config.zona_horaria)
             factura.pagos.append(
                 PagoFactura(
@@ -172,7 +172,7 @@ class FacturacionService:
         """Anula una factura emitida y deja sus procedimientos otra vez pendientes (RN-13).
 
         Una factura pagada, con algún pago registrado o ya radicada al pagador no se anula
-        (RN-17). Con factura electrónica aceptada se anula con nota crédito (RN-21).
+        (RN-17). Con factura electrónica aceptada se anula con nota crédito (RN-23).
         """
         motivo = (motivo or "").strip()
         if not motivo:
