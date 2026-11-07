@@ -7,7 +7,9 @@ from app.api.schemas import (
     FacturaOut,
     IngresoDetalleOut,
     IngresoOut,
+    OrdenOut,
     RealizadoOut,
+    ResultadoValorOut,
 )
 from app.container import Contenedor
 from app.domain.excepciones import NoEncontrado
@@ -16,6 +18,7 @@ from app.domain.modelos import (
     Consulta,
     Factura,
     Ingreso,
+    OrdenClinica,
     OrigenPago,
     Paciente,
     ProcedimientoRealizado,
@@ -102,6 +105,8 @@ def ingresos_out(
         salida.medico_nombre = medicos[ingreso.medico_id]
         salida.resumen_egreso = ingreso.resumen_egreso if clinico else None
         salida.diagnostico_principal = ingreso.diagnostico_principal if clinico else None
+        if clinico and ingreso.diagnostico_principal:
+            salida.diagnostico_descripcion = c.cie10.descripcion(ingreso.diagnostico_principal)
         salida.convenio_nombre, salida.pagador_nombre, salida.porcentaje_tarifa = convenios.get(ingreso.convenio_id, ("", "", 100))
         resultado.append(salida)
     return resultado
@@ -121,5 +126,29 @@ def facturas_out(c: Contenedor, facturas: list[Factura]) -> list[FacturaOut]:
         salida.pagado_paciente = factura.pagado(OrigenPago.PACIENTE)
         salida.pagado_pagador = factura.pagado(OrigenPago.PAGADOR)
         salida.dias_radicada = c.cartera.edad_dias(factura)
+        resultado.append(salida)
+    return resultado
+
+
+def ordenes_out(c: Contenedor, ordenes: list[OrdenClinica]) -> list[OrdenOut]:
+    """Las órdenes y resultados son datos clínicos: solo se piden desde rutas de médico o laboratorio."""
+    pacientes = _pacientes_por_id(c, {o.paciente_id for o in ordenes})
+    usuarios = _nombres_de_usuarios(c, {o.medico_id for o in ordenes} | {o.registrado_por_id for o in ordenes if o.registrado_por_id})
+    resultado = []
+    for o in ordenes:
+        salida = OrdenOut.model_validate(o)
+        salida.valores = [
+            ResultadoValorOut(
+                parametro=v.parametro, valor=v.valor, unidad=v.unidad, ref_min=v.ref_min, ref_max=v.ref_max, alterado=v.alterado
+            )
+            for v in o.valores
+        ]
+        salida.alterada = any(v.alterado for v in o.valores)
+        paciente = pacientes.get(o.paciente_id)
+        if paciente is not None:
+            salida.paciente_nombre = paciente.nombre_completo
+            salida.paciente_documento = f"{paciente.tipo_documento} {paciente.numero_documento}"
+        salida.medico_nombre = usuarios.get(o.medico_id, "")
+        salida.registrado_por = usuarios.get(o.registrado_por_id, "") if o.registrado_por_id else ""
         resultado.append(salida)
     return resultado
