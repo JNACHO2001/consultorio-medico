@@ -63,14 +63,16 @@ export function edad(fechaNacimiento) {
   return `${anos} años`;
 }
 
-export const ROLES = { RECEPCION: "Recepción", MEDICO: "Médico", ADMINISTRADOR: "Administrador" };
+export const ROLES = { RECEPCION: "Recepción", MEDICO: "Médico", ADMINISTRADOR: "Administrador", LABORATORIO: "Apoyo diagnóstico" };
 export const ESTADOS = {
   PROGRAMADA: "Programada", ATENDIDA: "Atendida", CANCELADA: "Cancelada",
   ABIERTO: "Abierto", EGRESADO: "Egresado",
   EMITIDA: "Por cobrar", PAGADA: "Pagada", ANULADA: "Anulada",
+  SOLICITADA: "Solicitada", REALIZADA: "Realizada",
   ABIERTA: "Abierta", RESPONDIDA: "Respondida", ACEPTADA: "Aceptada", LEVANTADA: "Levantada",
 };
 export const TIPOS_PAGADOR = { PARTICULAR: "Particular", EPS: "EPS", ARL: "ARL", SOAT: "SOAT", PREPAGADA: "Medicina prepagada" };
+export const AREAS_APOYO = { NINGUNA: "No es de apoyo", LABORATORIO: "Laboratorio", IMAGENOLOGIA: "Imagenología", DIAGNOSTICO: "Diagnóstico (ECG, etc.)" };
 export const TIPOS_SERVICIO = { CONSULTA: "Consulta", PROCEDIMIENTO: "Procedimiento", OTRO_SERVICIO: "Otro servicio" };
 export const CONCEPTOS_GLOSA = {
   FACTURACION: "Facturación", TARIFAS: "Tarifas", SOPORTES: "Soportes", AUTORIZACION: "Autorización",
