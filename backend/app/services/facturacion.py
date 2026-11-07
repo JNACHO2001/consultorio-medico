@@ -1,18 +1,28 @@
-"""Facturación de los procedimientos de un ingreso (RF-18)."""
+"""Facturación de los procedimientos de un ingreso y cobro al paciente (RF-18, RF-19)."""
 from __future__ import annotations
 
+import dataclasses
 import threading
 from typing import Optional
 
 from app.config import Configuracion
 from app.core.tiempo import ahora_local
 from app.domain.excepciones import NoEncontrado, ReglaNegocio
-from app.domain.modelos import EstadoFactura, Factura, LineaFactura, MetodoPago, Usuario
+from app.domain.modelos import (
+    EstadoFactura,
+    Factura,
+    LineaFactura,
+    MetodoPago,
+    OrigenPago,
+    PagoFactura,
+    Usuario,
+)
 from app.repositories.interfaces import (
     IFacturaRepository,
     IIngresoRepository,
     IProcedimientoRealizadoRepository,
 )
+from app.services.convenios import ConvenioService, repartir_total
 
 
 class FacturacionService:
@@ -22,12 +32,19 @@ class FacturacionService:
         realizados: IProcedimientoRealizadoRepository,
         ingresos: IIngresoRepository,
         config: Configuracion,
+        convenios: ConvenioService,
     ) -> None:
+        self._convenios = convenios
         self._facturas = facturas
         self._realizados = realizados
         self._ingresos = ingresos
         self._config = config
         self._lock = threading.Lock()
+
+    @property
+    def bloqueo(self) -> threading.Lock:
+        """Candado compartido con la cartera: ambos modifican las mismas facturas."""
+        return self._lock
 
     def facturar(
         self, ingreso_id: int, usuario: Usuario, procedimiento_ids: Optional[list[int]] = None
@@ -58,12 +75,33 @@ class FacturacionService:
             if not elegidos:
                 raise ReglaNegocio("No hay procedimientos pendientes de facturar en este ingreso.")
 
+            convenio = self._convenios.obtener_convenio(ingreso.convenio_id) if ingreso.convenio_id else None
+            pagador = (
+                self._convenios.obtener_pagador(convenio.pagador_id, incluir_inactivo=True) if convenio else None
+            )
+            total = sum(p.subtotal for p in elegidos)
+            # La cuota moderadora se cobra una sola vez por ingreso, en la primera factura vigente.
+            if convenio is not None and any(
+                f.estado != EstadoFactura.ANULADA for f in self._facturas.buscar(ingreso_id=ingreso.id)
+            ):
+                convenio_a_repartir = dataclasses.replace(convenio, cuota_moderadora=0)
+            else:
+                convenio_a_repartir = convenio
+            valor_paciente, valor_pagador = repartir_total(total, convenio_a_repartir)
+
             factura = self._facturas.agregar(
                 Factura(
                     ingreso_id=ingreso.id,
                     paciente_id=ingreso.paciente_id,
                     fecha=ahora_local(self._config.zona_horaria),
                     emitida_por_id=usuario.id,
+                    pagador_id=pagador.id if pagador else None,
+                    pagador_codigo=pagador.codigo if pagador else "",
+                    pagador_nombre=pagador.nombre if pagador else "",
+                    convenio_id=convenio.id if convenio else None,
+                    convenio_nombre=convenio.nombre if convenio else "",
+                    valor_paciente=valor_paciente,
+                    valor_pagador=valor_pagador,
                     lineas=[
                         LineaFactura(
                             procedimiento_realizado_id=p.id,
@@ -95,20 +133,35 @@ class FacturacionService:
     ) -> list[Factura]:
         return self._facturas.buscar(estado, paciente_id, ingreso_id)
 
-    def pagar(self, factura_id: int, metodo: MetodoPago) -> Factura:
+    def pagar(self, factura_id: int, metodo: MetodoPago, usuario: Optional[Usuario] = None) -> Factura:
+        """Registra el pago de lo que debe el paciente (todo, si es particular; el copago, si hay convenio)."""
         with self._lock:
             factura = self.obtener(factura_id)
             if factura.estado != EstadoFactura.EMITIDA:
                 raise ReglaNegocio(f"La factura está {factura.estado.value.lower()}: solo se pagan las emitidas.")
-            factura.estado = EstadoFactura.PAGADA
+            if factura.saldo_paciente <= 0:
+                raise ReglaNegocio("El paciente no tiene saldo pendiente en esta factura.")
+            ahora = ahora_local(self._config.zona_horaria)
+            factura.pagos.append(
+                PagoFactura(
+                    origen=OrigenPago.PACIENTE,
+                    metodo=metodo,
+                    valor=factura.saldo_paciente,
+                    fecha=ahora,
+                    registrado_por_id=usuario.id if usuario else 0,
+                )
+            )
             factura.metodo_pago = metodo
-            factura.fecha_pago = ahora_local(self._config.zona_horaria)
+            if factura.saldada():
+                factura.estado = EstadoFactura.PAGADA
+                factura.fecha_pago = ahora
             return self._facturas.actualizar(factura)
 
     def anular(self, factura_id: int, motivo: str) -> Factura:
         """Anula una factura emitida y deja sus procedimientos otra vez pendientes (RN-13).
 
-        Una factura pagada no se anula: requeriría una nota crédito, fuera del alcance.
+        Una factura pagada, con algún pago registrado o ya radicada al pagador no se anula
+        (RN-17): requeriría una nota crédito, fuera del alcance.
         """
         motivo = (motivo or "").strip()
         if not motivo:
@@ -117,6 +170,10 @@ class FacturacionService:
             factura = self.obtener(factura_id)
             if factura.estado != EstadoFactura.EMITIDA:
                 raise ReglaNegocio(f"La factura está {factura.estado.value.lower()}: solo se anulan las emitidas.")
+            if factura.pagos:
+                raise ReglaNegocio("La factura ya tiene pagos registrados: no se puede anular.")
+            if factura.radicada:
+                raise ReglaNegocio("La factura ya fue radicada al pagador: no se puede anular.")
             factura.estado = EstadoFactura.ANULADA
             factura.motivo_anulacion = motivo
             factura = self._facturas.actualizar(factura)
