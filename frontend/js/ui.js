@@ -69,6 +69,7 @@ export const ESTADOS = {
   ABIERTO: "Abierto", EGRESADO: "Egresado",
   EMITIDA: "Por cobrar", PAGADA: "Pagada", ANULADA: "Anulada",
   SOLICITADA: "Solicitada", REALIZADA: "Realizada",
+  GENERADO: "Generado", ACEPTADO: "Aceptado", RECHAZADO: "Rechazado", CERRADA: "Cerrada",
   ABIERTA: "Abierta", RESPONDIDA: "Respondida", ACEPTADA: "Aceptada", LEVANTADA: "Levantada",
 };
 export const TIPOS_PAGADOR = { PARTICULAR: "Particular", EPS: "EPS", ARL: "ARL", SOAT: "SOAT", PREPAGADA: "Medicina prepagada" };
@@ -78,6 +79,8 @@ export const CONCEPTOS_GLOSA = {
   FACTURACION: "Facturación", TARIFAS: "Tarifas", SOPORTES: "Soportes", AUTORIZACION: "Autorización",
   COBERTURA: "Cobertura", PERTINENCIA: "Pertinencia",
 };
+export const TIPOS_DOCUMENTO = { FACTURA: "Factura electrónica", NOTA_CREDITO: "Nota crédito" };
+export const CONCEPTOS_NOTA = { ANULACION: "Anulación de la factura", GLOSA: "Glosa aceptada" };
 export const TIPOS_INGRESO = { AMBULATORIO: "Ambulatorio", URGENCIAS: "Urgencias", OBSERVACION: "Observación" };
 export const METODOS_PAGO = [["EFECTIVO", "Efectivo"], ["TARJETA", "Tarjeta"], ["TRANSFERENCIA", "Transferencia"], ["EPS", "Cobro a la EPS"]];
 
