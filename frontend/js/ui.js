@@ -68,6 +68,13 @@ export const ESTADOS = {
   PROGRAMADA: "Programada", ATENDIDA: "Atendida", CANCELADA: "Cancelada",
   ABIERTO: "Abierto", EGRESADO: "Egresado",
   EMITIDA: "Por cobrar", PAGADA: "Pagada", ANULADA: "Anulada",
+  ABIERTA: "Abierta", RESPONDIDA: "Respondida", ACEPTADA: "Aceptada", LEVANTADA: "Levantada",
+};
+export const TIPOS_PAGADOR = { PARTICULAR: "Particular", EPS: "EPS", ARL: "ARL", SOAT: "SOAT", PREPAGADA: "Medicina prepagada" };
+export const TIPOS_SERVICIO = { CONSULTA: "Consulta", PROCEDIMIENTO: "Procedimiento", OTRO_SERVICIO: "Otro servicio" };
+export const CONCEPTOS_GLOSA = {
+  FACTURACION: "Facturación", TARIFAS: "Tarifas", SOPORTES: "Soportes", AUTORIZACION: "Autorización",
+  COBERTURA: "Cobertura", PERTINENCIA: "Pertinencia",
 };
 export const TIPOS_INGRESO = { AMBULATORIO: "Ambulatorio", URGENCIAS: "Urgencias", OBSERVACION: "Observación" };
 export const METODOS_PAGO = [["EFECTIVO", "Efectivo"], ["TARJETA", "Tarjeta"], ["TRANSFERENCIA", "Transferencia"], ["EPS", "Cobro a la EPS"]];
