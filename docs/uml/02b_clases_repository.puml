@@ -36,7 +36,8 @@ class ConsultaService <<servicio>> {
 }
 
 class IngresoService <<servicio>> {
-  + admitir(pacienteId, medicoId, tipo, motivo) : Ingreso
+  + admitir(pacienteId, medicoId, tipo, motivo, convenioId, autorizacion) : Ingreso
+  + registrarDiagnostico(ingresoId, codigoCie10) : Ingreso
   + registrarProcedimiento(ingresoId, procedimientoId, cantidad) : ProcedimientoRealizado
   + anularProcedimiento(ingresoId, id, motivo) : void
   + darEgreso(ingresoId, resumen) : Ingreso
@@ -48,9 +49,29 @@ class FacturacionService <<servicio>> {
   + anular(facturaId, motivo) : Factura
 }
 
+class ConvenioService <<servicio>> {
+  + crearPagador(codigo, nombre, tipo, nit) : Pagador
+  + crearConvenio(pagadorId, condiciones) : Convenio
+  + calcularPrecio(tarifaBase, convenio) : Entero
+  + repartirTotal(total, convenio) : (paciente, pagador)
+}
+
+class CarteraService <<servicio>> {
+  + radicar(facturaId, numero) : Factura
+  + registrarPagoPagador(facturaId, valor, ...) : Factura
+  + registrarGlosa(facturaId, concepto, motivo, valor) : Factura
+  + responderGlosa(facturaId, glosaId, respuesta) : Factura
+  + resolverGlosa(facturaId, glosaId, aceptada, nota) : Factura
+  + resumen() : List<ResumenCartera>
+}
+
+class RipsService <<servicio>> {
+  + generar(desde, hasta, pagadorId) : BorradorRips
+}
+
 class CatalogoService <<servicio>> {
-  + crear(codigo, nombre, tarifa) : Procedimiento
-  + actualizar(id, nombre, tarifa) : Procedimiento
+  + crear(codigo, nombre, tarifa, cups, tipoServicio) : Procedimiento
+  + actualizar(id, nombre, tarifa, cups, tipoServicio) : Procedimiento
 }
 
 class NotificacionService <<servicio>> {
@@ -94,6 +115,14 @@ interface IProcedimientoRealizadoRepository {
 
 interface IFacturaRepository {
   + buscar(estado, pacienteId, ingresoId) : List<Factura>
+}
+
+interface IPagadorRepository {
+  + obtenerPorCodigo(codigo) : Pagador
+}
+
+interface IConvenioRepository {
+  + obtenerPorPagador(pagadorId) : List<Convenio>
 }
 
 interface IProcedimientoRepository {
@@ -149,6 +178,13 @@ IngresoService ..> IProcedimientoRealizadoRepository
 IngresoService ..> CatalogoService : toma tarifa
 FacturacionService ..> IFacturaRepository
 FacturacionService ..> IProcedimientoRealizadoRepository
+FacturacionService ..> ConvenioService : reparte la cuenta
+IngresoService ..> ConvenioService : precio del convenio
+ConvenioService ..> IPagadorRepository
+ConvenioService ..> IConvenioRepository
+CarteraService ..> IFacturaRepository
+RipsService ..> IFacturaRepository
+RipsService ..> IIngresoRepository
 CatalogoService ..> IProcedimientoRepository
 
 ' Interfaz genérica común (T = entidad)
@@ -161,6 +197,8 @@ IIngresoRepository --|> IRepository
 IProcedimientoRealizadoRepository --|> IRepository
 IFacturaRepository --|> IRepository
 IProcedimientoRepository --|> IRepository
+IPagadorRepository --|> IRepository
+IConvenioRepository --|> IRepository
 
 ' Implementaciones
 MemoryPacienteRepository ..|> IPacienteRepository
@@ -173,6 +211,8 @@ MemoryIngresoRepository ..|> IIngresoRepository
 MemoryProcedimientoRealizadoRepository ..|> IProcedimientoRealizadoRepository
 MemoryFacturaRepository ..|> IFacturaRepository
 MemoryProcedimientoRepository ..|> IProcedimientoRepository
+MemoryPagadorRepository ..|> IPagadorRepository
+MemoryConvenioRepository ..|> IConvenioRepository
 
 ' Auditoría disparada desde el repositorio (RF-13)
 MemoryPacienteRepository ..> IAuditoriaRepository : registra accesos
