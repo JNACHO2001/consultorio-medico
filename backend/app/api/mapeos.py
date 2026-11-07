@@ -10,7 +10,16 @@ from app.api.schemas import (
     RealizadoOut,
 )
 from app.container import Contenedor
-from app.domain.modelos import Cita, Consulta, Factura, Ingreso, Paciente, ProcedimientoRealizado
+from app.domain.excepciones import NoEncontrado
+from app.domain.modelos import (
+    Cita,
+    Consulta,
+    Factura,
+    Ingreso,
+    OrigenPago,
+    Paciente,
+    ProcedimientoRealizado,
+)
 
 
 def consulta_out(c: Contenedor, consulta: Consulta) -> ConsultaOut:
@@ -62,6 +71,14 @@ def ingresos_out(
     pacientes = _pacientes_por_id(c, {i.paciente_id for i in ingresos})
     medicos = _nombres_de_usuarios(c, {i.medico_id for i in ingresos})
     todos = c.ingresos.procedimientos_de_ingresos([i.id for i in ingresos])
+    convenios: dict[int, tuple[str, str, int]] = {}
+    for convenio_id in {i.convenio_id for i in ingresos if i.convenio_id}:
+        try:
+            convenio = c.convenios.obtener_convenio(convenio_id)
+            pagador = c.convenios.obtener_pagador(convenio.pagador_id, incluir_inactivo=True)
+            convenios[convenio_id] = (convenio.nombre, pagador.nombre, convenio.porcentaje_tarifa)
+        except NoEncontrado:
+            convenios[convenio_id] = ("", "", 100)
     resultado = []
     for ingreso in ingresos:
         propios = [r for r in todos if r.ingreso_id == ingreso.id]
@@ -84,6 +101,8 @@ def ingresos_out(
             salida.paciente_documento = f"{paciente.tipo_documento} {paciente.numero_documento}"
         salida.medico_nombre = medicos[ingreso.medico_id]
         salida.resumen_egreso = ingreso.resumen_egreso if clinico else None
+        salida.diagnostico_principal = ingreso.diagnostico_principal if clinico else None
+        salida.convenio_nombre, salida.pagador_nombre, salida.porcentaje_tarifa = convenios.get(ingreso.convenio_id, ("", "", 100))
         resultado.append(salida)
     return resultado
 
@@ -99,5 +118,8 @@ def facturas_out(c: Contenedor, facturas: list[Factura]) -> list[FacturaOut]:
             salida.paciente_nombre = paciente.nombre_completo
             salida.paciente_documento = f"{paciente.tipo_documento} {paciente.numero_documento}"
         salida.emitida_por = emisores[factura.emitida_por_id]
+        salida.pagado_paciente = factura.pagado(OrigenPago.PACIENTE)
+        salida.pagado_pagador = factura.pagado(OrigenPago.PAGADOR)
+        salida.dias_radicada = c.cartera.edad_dias(factura)
         resultado.append(salida)
     return resultado
