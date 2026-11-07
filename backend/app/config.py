@@ -34,6 +34,10 @@ class Configuracion:
     iteraciones_hash: int = 200_000
     recordatorios_automaticos: bool = True
     intervalo_recordatorios_seg: int = 60
+    # Datos de la IPS que van en el encabezado del RIPS (valores de demostración).
+    ips_nombre: str = "Salud Integral (demostración)"
+    ips_nit: str = "900000000-0"
+    ips_codigo_habilitacion: str = "0000000000"
 
 
 def cargar_configuracion() -> Configuracion:
@@ -54,4 +58,7 @@ def cargar_configuracion() -> Configuracion:
         sembrar_datos_demo=_booleano(os.getenv("SEMBRAR_DATOS_DEMO"), True),
         contrasena_demo=os.getenv("CONTRASENA_DEMO", "Salud2026*"),
         recordatorios_automaticos=_booleano(os.getenv("RECORDATORIOS_AUTOMATICOS"), True),
+        ips_nombre=os.getenv("IPS_NOMBRE", "Salud Integral (demostración)"),
+        ips_nit=os.getenv("IPS_NIT", "900000000-0"),
+        ips_codigo_habilitacion=os.getenv("IPS_CODIGO_HABILITACION", "0000000000"),
     )
