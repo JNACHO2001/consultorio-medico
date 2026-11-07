@@ -70,6 +70,7 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
     if (propio && abierto) {
       acciones.push(
         h("button", { class: "btn btn-primario", type: "button", onclick: () => registrar(ingreso) }, "Registrar procedimiento"),
+        h("button", { class: "btn", type: "button", onclick: () => diagnostico(ingreso) }, ingreso.diagnostico_principal ? "Cambiar diagnóstico" : "Registrar diagnóstico"),
         h("button", { class: "btn", type: "button", onclick: () => egreso(ingreso) }, "Dar egreso"));
     }
     if (!esMedico && pendientes.length) {
@@ -87,6 +88,9 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
         h("dl", { class: "ficha" },
           dato("Tipo de ingreso", TIPOS_INGRESO[ingreso.tipo]), dato("Fecha de ingreso", fechaHora(ingreso.fecha_ingreso)),
           dato("Médico tratante", ingreso.medico_nombre), dato("Motivo", ingreso.motivo),
+          dato("Pagador", ingreso.pagador_nombre ? `${ingreso.pagador_nombre} · ${ingreso.convenio_nombre}` : ""),
+          ingreso.numero_autorizacion ? dato("Autorización", ingreso.numero_autorizacion) : null,
+          esMedico ? dato("Diagnóstico principal (CIE-10)", ingreso.diagnostico_principal) : null,
           ingreso.fecha_egreso ? dato("Fecha de egreso", fechaHora(ingreso.fecha_egreso)) : null,
           ingreso.resumen_egreso ? dato("Resumen de egreso", ingreso.resumen_egreso) : null)),
       cuenta(ingreso, propio && abierto),
@@ -128,10 +132,10 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
       h("h2", {}, "Facturas de este ingreso"),
       facturas.length
         ? h("div", { class: "tabla-contenedor" }, h("table", {},
-          h("thead", {}, h("tr", {}, ["Factura", "Fecha", "Total", "Estado", ""].map((t, i) => h("th", { class: i === 2 ? "num" : "" }, t)))),
+          h("thead", {}, h("tr", {}, ["Factura", "Fecha", "Total", "Saldo", "Estado", ""].map((t, i) => h("th", { class: i === 2 || i === 3 ? "num" : "" }, t)))),
           h("tbody", {}, facturas.map((f) => h("tr", {},
             h("td", { class: "num-izq" }, h("b", {}, f.numero)), h("td", { class: "fecha" }, fechaHora(f.fecha)),
-            h("td", { class: "num" }, pesos(f.total)), h("td", {}, sello(f.estado)),
+            h("td", { class: "num" }, pesos(f.total)), h("td", { class: "num" }, f.estado === "ANULADA" ? "—" : pesos(f.saldo)), h("td", {}, sello(f.estado)),
             h("td", {}, h("button", { class: "btn btn-pequeno", type: "button", onclick: () => abrirFactura(f, { puedeOperar: true, alCambiar: pintar }) }, "Ver / cobrar")))))))
         : vacio("Todavía no se ha facturado nada de este ingreso."));
   }
@@ -156,7 +160,8 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
         const subtotal = h("b", { class: "num" });
         const actualizar = () => {
           const p = catalogo.find((x) => x.id === Number(lista.value));
-          subtotal.textContent = p ? `${pesos(p.tarifa)} × ${Number(cantidad.value) || 0} = ${pesos(p.tarifa * (Number(cantidad.value) || 0))}` : "";
+          const unitario = p ? Math.floor((p.tarifa * ingreso.porcentaje_tarifa + 50) / 100) : 0;
+          subtotal.textContent = p ? `${pesos(unitario)} × ${Number(cantidad.value) || 0} = ${pesos(unitario * (Number(cantidad.value) || 0))}` : "";
         };
         lista.addEventListener("change", actualizar);
         cantidad.addEventListener("input", actualizar);
@@ -181,9 +186,40 @@ export async function montarIngreso(raiz, { usuario, parametros }) {
           },
         }, mensaje,
           h("div", { class: "rejilla-campos" }, campo("Procedimiento", lista), campo("Cantidad", cantidad)),
-          h("p", { class: "valor-previo" }, "Valor: ", subtotal),
+          h("p", { class: "valor-previo" }, "Valor: ", subtotal,
+            ingreso.porcentaje_tarifa !== 100 ? h("small", { class: "suave" }, ` (tarifa pactada con ${ingreso.pagador_nombre}: ${ingreso.porcentaje_tarifa} %)`) : null),
           campo("Observaciones clínicas", areaTexto("observaciones", "", { rows: 3, maxlength: 2000 }), "Solo las ve el personal médico."),
           h("div", { class: "acciones derecha" }, h("button", { class: "btn", type: "button", onclick: cerrar }, "Cancelar"), guardar));
+        cuerpo.append(form);
+      },
+    });
+  }
+
+  function diagnostico(ingreso) {
+    abrirDialogo({
+      titulo: "Diagnóstico principal",
+      construir: (cuerpo, cerrar) => {
+        const mensaje = h("div");
+        const boton = h("button", { class: "btn btn-primario", type: "submit" }, "Guardar diagnóstico");
+        const form = h("form", {
+          onsubmit: async (e) => {
+            e.preventDefault();
+            boton.disabled = true;
+            try {
+              await api.put(`/api/ingresos/${ingreso.id}/diagnostico`, { codigo_cie10: form.elements.codigo_cie10.value.trim().toUpperCase() });
+              cerrar();
+              aviso("Diagnóstico registrado.");
+              pintar();
+            } catch (error) {
+              mensaje.replaceChildren(alerta(error));
+              boton.disabled = false;
+            }
+          },
+        }, mensaje,
+          h("p", {}, "Es el diagnóstico que se reporta en el RIPS de la atención."),
+          campo("Código CIE-10", entrada("codigo_cie10", { valor: ingreso.diagnostico_principal || "", requerido: true, maxlength: 4, pattern: "[A-Za-z][0-9]{2}[0-9A-Za-z]?", style: "text-transform:uppercase" }),
+            "Sin punto: J00 o K297."),
+          h("div", { class: "acciones derecha" }, h("button", { class: "btn", type: "button", onclick: cerrar }, "Cancelar"), boton));
         cuerpo.append(form);
       },
     });
