@@ -14,12 +14,14 @@ from typing import Generic, Optional, TypeVar
 from app.domain.modelos import (
     Cita,
     Consulta,
+    Convenio,
     EstadoCita,
     EstadoFactura,
     EstadoIngreso,
     Factura,
     Ingreso,
     NotaAclaratoria,
+    Pagador,
     Paciente,
     Procedimiento,
     ProcedimientoRealizado,
@@ -111,6 +113,16 @@ class IProcedimientoRepository(IRepository[Procedimiento]):
 
     @abstractmethod
     def obtener_por_codigo(self, codigo: str) -> Optional[Procedimiento]: ...
+
+
+class IPagadorRepository(IRepository[Pagador]):
+    @abstractmethod
+    def obtener_por_codigo(self, codigo: str) -> Optional[Pagador]: ...
+
+
+class IConvenioRepository(IRepository[Convenio]):
+    @abstractmethod
+    def obtener_por_pagador(self, pagador_id: int, incluir_inactivos: bool = False) -> list[Convenio]: ...
 
 
 class IIngresoRepository(IRepository[Ingreso]):
