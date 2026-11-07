@@ -91,12 +91,16 @@ class Ingreso {
   - estado : EstadoIngreso
   - fechaEgreso : DateTime
   - resumenEgreso : String
+  - numeroAutorizacion : String
+  - diagnosticoPrincipal : CIE-10
 }
 
 class Procedimiento <<catálogo>> {
   - codigo : String
   - nombre : String
   - tarifa : Entero (pesos)
+  - cups : String
+  - tipoServicio : TipoServicio
 }
 
 class ProcedimientoRealizado {
@@ -115,6 +119,60 @@ class Factura {
   - metodoPago : MetodoPago
   - fechaPago : DateTime
   - motivoAnulacion : String
+  - valorPaciente : Entero (pesos)
+  - valorPagador : Entero (pesos)
+  - fechaRadicacion : DateTime
+  - numeroRadicacion : String
+  + saldoPaciente() : Entero
+  + saldoPagador() : Entero
+  + saldada() : Boolean
+}
+
+class Pagador {
+  - codigo : String
+  - nombre : String
+  - tipo : TipoPagador
+  - nit : String
+}
+
+class Convenio {
+  - nombre : String
+  - porcentajeTarifa : Entero
+  - copagoPorcentaje : Entero
+  - cuotaModeradora : Entero (pesos)
+  - requiereAutorizacion : Boolean
+}
+
+class PagoFactura {
+  - origen : OrigenPago
+  - metodo : MetodoPago
+  - valor : Entero (pesos)
+  - fecha : DateTime
+  - referencia : String
+}
+
+class Glosa {
+  - concepto : ConceptoGlosa
+  - motivo : String
+  - valor : Entero (pesos)
+  - estado : EstadoGlosa
+  - respuesta : String
+  - notaResolucion : String
+}
+
+enum EstadoGlosa {
+  ABIERTA
+  RESPONDIDA
+  ACEPTADA
+  LEVANTADA
+}
+
+enum TipoPagador {
+  PARTICULAR
+  EPS
+  ARL
+  SOAT
+  PREPAGADA
 }
 
 class LineaFactura {
@@ -167,6 +225,13 @@ ProcedimientoRealizado "*" --> "0..1" Factura : se factura en
 Factura "*" --> "1" Ingreso
 Factura "1" *-- "1..*" LineaFactura
 Factura --> EstadoFactura
+Pagador "1" *-- "*" Convenio : pacta
+Ingreso "*" --> "1" Convenio : se atiende bajo
+Factura "*" --> "1" Convenio : copia condiciones
+Factura "1" *-- "*" PagoFactura : recibe
+Factura "1" *-- "*" Glosa : puede tener
+Pagador --> TipoPagador
+Glosa --> EstadoGlosa
 
 RegistroAuditoria "*" --> "1" Usuario : realizado por
 
@@ -179,6 +244,12 @@ note bottom of ProcedimientoRealizado
   El valor se copia del catálogo al registrarlo:
   un cambio de tarifa no altera lo ya realizado (RN-10).
   Un procedimiento se factura una sola vez (RN-12).
+end note
+
+note bottom of Convenio
+  La tarifa del convenio se aplica al registrar el procedimiento (RN-14).
+  La cuenta se reparte entre paciente y pagador (RN-15).
+  Las glosas solo aplican a facturas radicadas (RN-18, RN-19).
 end note
 
 note bottom of Paciente
