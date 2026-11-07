@@ -1,4 +1,4 @@
-"""RF-25 a RF-27: factura electrónica DIAN (simulada), notas crédito, recibos y caja (RN-24 a RN-26)."""
+"""RF-25 a RF-27: factura electrónica DIAN (simulada), notas crédito, recibos y caja (RN-22 a RN-26)."""
 import dataclasses
 import re
 import xml.etree.ElementTree as ET
