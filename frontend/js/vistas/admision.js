@@ -1,5 +1,5 @@
 import { api } from "../api.js";
-import { abrirDialogo, alerta, aviso, campo, areaTexto, debounce, entrada, h, seleccion, TIPOS_INGRESO } from "../ui.js";
+import { abrirDialogo, alerta, aviso, campo, areaTexto, debounce, entrada, h, pesos, seleccion, TIPOS_INGRESO } from "../ui.js";
 
 // Formulario de admisión (ingreso). Si ya se conoce al paciente se muestra fijo; si no, se elige buscándolo.
 export function abrirAdmision({ paciente = null, alCrear }) {
@@ -14,8 +14,10 @@ export function abrirAdmision({ paciente = null, alCrear }) {
       const resultados = h("ul", { class: "resultados" });
       const guardar = h("button", { class: "btn btn-primario", type: "submit" }, "Ingresar paciente");
       let medicos = [];
+      let convenios = [];
       try {
         medicos = await api.get("/api/medicos");
+        convenios = (await api.get("/api/pagadores")).flatMap((p) => p.convenios.filter((c) => c.activo).map((c) => ({ ...c, pagador: p.nombre, particular: p.codigo === "PARTICULAR" })));
       } catch (error) {
         cuerpo.append(alerta(error));
         return;
@@ -46,6 +48,20 @@ export function abrirAdmision({ paciente = null, alCrear }) {
       }
       buscador.addEventListener("input", debounce(buscarPaciente, 300));
 
+      const lista = seleccion("convenio_id", convenios.map((c) => [c.id, c.particular ? c.pagador : `${c.pagador} · ${c.nombre}`]), convenios.find((c) => c.particular)?.id);
+      const autorizacion = entrada("numero_autorizacion", { maxlength: 30 });
+      const campoAutorizacion = campo("Número de autorización", autorizacion, "");
+      const condiciones = h("p", { class: "suave pequeno" });
+      const actualizarConvenio = () => {
+        const c = convenios.find((x) => x.id === Number(lista.value));
+        if (!c) return;
+        campoAutorizacion.hidden = !c.requiere_autorizacion;
+        autorizacion.required = c.requiere_autorizacion;
+        condiciones.textContent = c.particular ? "Paciente particular: paga la tarifa completa."
+          : `Tarifa al ${c.porcentaje_tarifa} %; el paciente paga ${c.copago_porcentaje} % de copago${c.cuota_moderadora ? ` y ${pesos(c.cuota_moderadora)} de cuota moderadora` : ""}.`;
+      };
+      lista.addEventListener("change", actualizarConvenio);
+
       const form = h("form", {
         onsubmit: async (e) => {
           e.preventDefault();
@@ -61,6 +77,8 @@ export function abrirAdmision({ paciente = null, alCrear }) {
               medico_id: Number(form.elements.medico_id.value),
               tipo: form.elements.tipo.value,
               motivo: form.elements.motivo.value.trim(),
+              convenio_id: Number(lista.value) || null,
+              numero_autorizacion: autorizacion.value.trim(),
             });
             cerrar();
             aviso("Paciente ingresado. Ya se pueden registrar sus procedimientos.");
@@ -79,9 +97,12 @@ export function abrirAdmision({ paciente = null, alCrear }) {
         h("div", { class: "rejilla-campos" },
           campo("Médico tratante", seleccion("medico_id", medicos.map((m) => [m.id, m.especialidad ? `${m.nombre_completo} · ${m.especialidad}` : m.nombre_completo]), medicos[0]?.id)),
           campo("Tipo de ingreso", seleccion("tipo", Object.entries(TIPOS_INGRESO), "AMBULATORIO"))),
+        h("div", { class: "rejilla-campos" }, campo("Quién paga (convenio)", lista), campoAutorizacion),
+        condiciones,
         campo("Motivo del ingreso", areaTexto("motivo", "", { rows: 2, required: true, maxlength: 500 })),
         h("div", { class: "acciones derecha" }, h("button", { class: "btn", type: "button", onclick: cerrar }, "Cancelar"), guardar));
       cuerpo.append(form);
+      actualizarConvenio();
       pintarPaciente();
     },
   });
