@@ -6,17 +6,26 @@ import threading
 from typing import Optional
 
 from app.domain.excepciones import Duplicado, NoEncontrado, ReglaNegocio
-from app.domain.modelos import Procedimiento
+from app.domain.modelos import Procedimiento, TipoServicio
 from app.repositories.interfaces import IProcedimientoRepository
 
 TARIFA_MAXIMA = 100_000_000
 _PATRON_CODIGO = re.compile(r"^[A-Z0-9-]{2,12}$")
+_PATRON_CUPS = re.compile(r"^[0-9]{6}$")
 
 
 def validar_tarifa(tarifa: int) -> int:
     if not isinstance(tarifa, int) or isinstance(tarifa, bool) or not 0 < tarifa <= TARIFA_MAXIMA:
         raise ReglaNegocio(f"La tarifa debe ser un valor entero en pesos entre 1 y {TARIFA_MAXIMA:,}.".replace(",", "."))
     return tarifa
+
+
+def validar_cups(cups: str) -> str:
+    """El CUPS tiene seis dígitos; es opcional, pero el RIPS lo exige para reportar el servicio."""
+    cups = (cups or "").strip()
+    if cups and not _PATRON_CUPS.match(cups):
+        raise ReglaNegocio("El código CUPS debe tener 6 dígitos.")
+    return cups
 
 
 class CatalogoService:
@@ -33,7 +42,14 @@ class CatalogoService:
             raise NoEncontrado("El procedimiento no existe en el catálogo.")
         return procedimiento
 
-    def crear(self, codigo: str, nombre: str, tarifa: int) -> Procedimiento:
+    def crear(
+        self,
+        codigo: str,
+        nombre: str,
+        tarifa: int,
+        cups: str = "",
+        tipo_servicio: TipoServicio = TipoServicio.PROCEDIMIENTO,
+    ) -> Procedimiento:
         codigo = (codigo or "").strip().upper()
         nombre = (nombre or "").strip()
         if not _PATRON_CODIGO.match(codigo):
@@ -41,15 +57,23 @@ class CatalogoService:
         if not nombre:
             raise ReglaNegocio("El nombre del procedimiento es obligatorio.")
         validar_tarifa(tarifa)
+        cups = validar_cups(cups)
         with self._lock:
             if self._procedimientos.obtener_por_codigo(codigo):
                 raise Duplicado("Ya existe un procedimiento con ese código.")
-            return self._procedimientos.agregar(Procedimiento(codigo=codigo, nombre=nombre, tarifa=tarifa))
+            return self._procedimientos.agregar(
+                Procedimiento(codigo=codigo, nombre=nombre, tarifa=tarifa, cups=cups, tipo_servicio=tipo_servicio)
+            )
 
     def actualizar(
-        self, procedimiento_id: int, nombre: Optional[str] = None, tarifa: Optional[int] = None
+        self,
+        procedimiento_id: int,
+        nombre: Optional[str] = None,
+        tarifa: Optional[int] = None,
+        cups: Optional[str] = None,
+        tipo_servicio: Optional[TipoServicio] = None,
     ) -> Procedimiento:
-        """Cambia nombre o tarifa. Lo ya realizado conserva su valor original (RN-10)."""
+        """Cambia nombre, tarifa, CUPS o clase. Lo ya realizado conserva su valor original (RN-10)."""
         procedimiento = self.obtener(procedimiento_id)
         if nombre is not None:
             nombre = nombre.strip()
@@ -58,6 +82,10 @@ class CatalogoService:
             procedimiento.nombre = nombre
         if tarifa is not None:
             procedimiento.tarifa = validar_tarifa(tarifa)
+        if cups is not None:
+            procedimiento.cups = validar_cups(cups)
+        if tipo_servicio is not None:
+            procedimiento.tipo_servicio = tipo_servicio
         return self._procedimientos.actualizar(procedimiento)
 
     def desactivar(self, procedimiento_id: int) -> None:
