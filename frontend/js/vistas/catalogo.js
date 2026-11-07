@@ -1,5 +1,5 @@
 import { api } from "../api.js";
-import { abrirDialogo, alerta, aviso, campo, confirmar, datosDe, entrada, h, pesos, seleccion, TIPOS_SERVICIO } from "../ui.js";
+import { abrirDialogo, alerta, aviso, campo, confirmar, datosDe, entrada, h, pesos, AREAS_APOYO, seleccion, TIPOS_SERVICIO } from "../ui.js";
 import { vacio } from "./pacientes.js";
 
 // Catálogo de procedimientos y tarifas. Todos los roles lo consultan; solo el administrador lo cambia.
@@ -14,7 +14,7 @@ export async function montarCatalogo(raiz, { usuario }) {
         ? h("div", { class: "tabla-contenedor" }, h("table", {},
           h("thead", {}, h("tr", {}, ["Código", "Procedimiento", "CUPS", "Tarifa base", edita ? "" : null].filter((t) => t !== null).map((t, i) => h("th", { class: i === 3 ? "num" : "" }, t)))),
           h("tbody", {}, lista.map((p) => h("tr", {},
-            h("td", { class: "num-izq" }, p.codigo), h("td", {}, h("b", {}, p.nombre), h("div", { class: "suave pequeno" }, TIPOS_SERVICIO[p.tipo_servicio] || "")),
+            h("td", { class: "num-izq" }, p.codigo), h("td", {}, h("b", {}, p.nombre), h("div", { class: "suave pequeno" }, TIPOS_SERVICIO[p.tipo_servicio] || "", p.area_apoyo !== "NINGUNA" ? ` · ${AREAS_APOYO[p.area_apoyo]}` : "")),
             h("td", { class: "num-izq" }, p.cups || h("span", { class: "suave" }, "Sin CUPS")), h("td", { class: "num" }, pesos(p.tarifa)),
             edita ? h("td", {}, h("div", { class: "celda-acciones" },
               h("button", { class: "btn btn-pequeno", type: "button", onclick: () => formulario(p) }, "Editar"),
@@ -56,7 +56,7 @@ export async function montarCatalogo(raiz, { usuario }) {
             datos.tarifa = Number(datos.tarifa);
             try {
               if (nuevo) await api.post("/api/procedimientos", datos);
-              else await api.put(`/api/procedimientos/${p.id}`, { nombre: datos.nombre, tarifa: datos.tarifa, cups: datos.cups, tipo_servicio: datos.tipo_servicio });
+              else await api.put(`/api/procedimientos/${p.id}`, { nombre: datos.nombre, tarifa: datos.tarifa, cups: datos.cups, tipo_servicio: datos.tipo_servicio, area_apoyo: datos.area_apoyo });
               cerrar();
               aviso(nuevo ? "Procedimiento agregado." : "Cambios guardados.");
               cargar();
@@ -72,7 +72,8 @@ export async function montarCatalogo(raiz, { usuario }) {
             nuevo ? null : "El cambio solo aplica a procedimientos nuevos; lo ya realizado conserva su valor."),
           h("div", { class: "rejilla-campos" },
             campo("Código CUPS", entrada("cups", { valor: p?.cups, maxlength: 6, pattern: "[0-9]{6}|", inputmode: "numeric" }), "6 dígitos. Lo exige el RIPS; puede dejarlo vacío por ahora."),
-            campo("Tipo de servicio", seleccion("tipo_servicio", Object.entries(TIPOS_SERVICIO), p?.tipo_servicio || "PROCEDIMIENTO"), "Define en qué grupo del RIPS se reporta.")),
+            campo("Tipo de servicio", seleccion("tipo_servicio", Object.entries(TIPOS_SERVICIO), p?.tipo_servicio || "PROCEDIMIENTO"), "Define en qué grupo del RIPS se reporta."),
+            campo("Apoyo diagnóstico", seleccion("area_apoyo", Object.entries(AREAS_APOYO), p?.area_apoyo || "NINGUNA"), "Si no es «No es de apoyo», el médico lo puede ordenar y lo realiza apoyo diagnóstico.")),
           h("div", { class: "acciones derecha" }, h("button", { class: "btn", type: "button", onclick: cerrar }, "Cancelar"), guardar));
         cuerpo.append(form);
       },
