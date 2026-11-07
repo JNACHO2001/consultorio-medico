@@ -7,7 +7,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.domain.modelos import (
     AreaApoyo,
     ConceptoGlosa,
+    ConceptoNotaCredito,
+    EstadoCaja,
     EstadoCita,
+    EstadoDocumentoElectronico,
     EstadoFactura,
     EstadoGlosa,
     EstadoIngreso,
@@ -17,6 +20,7 @@ from app.domain.modelos import (
     OrigenPago,
     PrioridadOrden,
     Rol,
+    TipoDocumentoElectronico,
     TipoIngreso,
     TipoPagador,
     TipoServicio,
@@ -431,6 +435,8 @@ class PagoFacturaOut(Salida):
     valor: int
     fecha: datetime
     referencia: str = ""
+    recibo_numero: str = ""
+    caja_id: Optional[int] = None
 
 
 class GlosaOut(Salida):
@@ -478,6 +484,10 @@ class FacturaOut(Salida):
     dias_radicada: Optional[int] = None
     pagos: list[PagoFacturaOut] = []
     glosas: list[GlosaOut] = []
+    # Facturación electrónica: factura vigente y notas crédito (sin XML; se descarga aparte)
+    factura_electronica: Optional["DocumentoResumenOut"] = None
+    notas_credito: list["DocumentoResumenOut"] = []
+    dian_obligatoria: bool = False
 
 
 class TramosCarteraOut(BaseModel):
@@ -586,3 +596,94 @@ class OrdenOut(Salida):
     registrado_por: str = ""
     motivo_anulacion: str = ""
     alterada: bool = False
+
+
+# ------------------------------------------------------------- facturación electrónica y caja
+
+
+class EventoDocumentoOut(Salida):
+    fecha: datetime
+    estado: EstadoDocumentoElectronico
+    mensaje: str
+
+
+class DocumentoResumenOut(Salida):
+    id: int
+    factura_id: int
+    tipo: TipoDocumentoElectronico
+    numero: str
+    fecha: Optional[datetime] = None
+    estado: EstadoDocumentoElectronico
+    cufe: str = ""
+    valor: int = 0
+    valor_bruto: int = 0
+    adquirente_nombre: str = ""
+    adquirente_documento: str = ""
+    adquirente_dv: str = ""
+    adquirente_es_pagador: bool = False
+    codigo_respuesta: str = ""
+    mensaje_respuesta: str = ""
+    intentos: int = 0
+    concepto: Optional[ConceptoNotaCredito] = None
+    motivo: str = ""
+    glosa_id: Optional[int] = None
+    documento_referencia_id: Optional[int] = None
+
+
+class DocumentoElectronicoOut(DocumentoResumenOut):
+    factura_numero: str = ""
+    paciente_nombre: str = ""
+    qr: str = ""
+    eventos: list[EventoDocumentoOut] = []
+
+
+class NotaCreditoIn(BaseModel):
+    concepto: ConceptoNotaCredito
+    motivo: str = Field(default="", max_length=300)
+    glosa_id: Optional[int] = None
+
+
+class AperturaCajaIn(BaseModel):
+    base_inicial: int = Field(ge=0, le=100_000_000)
+
+
+class CierreCajaIn(BaseModel):
+    efectivo_contado: int = Field(ge=0, le=1_000_000_000)
+    observaciones: str = Field(default="", max_length=300)
+
+
+class ReciboOut(Salida):
+    recibo_numero: str
+    factura_id: int
+    factura_numero: str
+    origen: OrigenPago
+    metodo: MetodoPago
+    valor: int
+    fecha: datetime
+    referencia: str = ""
+    paciente_nombre: str = ""
+
+
+class CajaOut(Salida):
+    id: int
+    cajero_id: int
+    cajero_nombre: str = ""
+    fecha_apertura: Optional[datetime] = None
+    base_inicial: int
+    estado: EstadoCaja
+    fecha_cierre: Optional[datetime] = None
+    efectivo_esperado: Optional[int] = None
+    efectivo_contado: Optional[int] = None
+    diferencia: Optional[int] = None
+    observaciones: str = ""
+    por_metodo: dict[str, int] = {}
+    n_recibos: int = 0
+    total_recibido: int = 0
+    efectivo_esperado_actual: int = 0
+
+
+class CajaDetalleOut(CajaOut):
+    recibos: list[ReciboOut] = []
+
+
+FacturaOut.model_rebuild()
