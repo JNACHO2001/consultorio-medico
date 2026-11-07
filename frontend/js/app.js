@@ -13,6 +13,7 @@ import { montarCatalogo } from "./vistas/catalogo.js";
 import { montarConvenios } from "./vistas/convenios.js";
 import { montarCartera } from "./vistas/cartera.js";
 import { montarRips } from "./vistas/rips.js";
+import { montarLaboratorio } from "./vistas/laboratorio.js";
 
 const raiz = document.getElementById("app");
 
@@ -24,6 +25,7 @@ const RUTAS = {
   pacientes: { titulo: "Pacientes", roles: ["RECEPCION", "MEDICO"], montar: montarPacientes },
   ingresos: { titulo: "Ingresos", roles: ["RECEPCION", "MEDICO"], montar: montarIngresos },
   ingreso: { titulo: "Cuenta del ingreso", roles: ["RECEPCION", "MEDICO"], montar: montarIngreso, oculta: true, padre: "ingresos" },
+  laboratorio: { titulo: "Apoyo diagnóstico", roles: ["LABORATORIO"], montar: montarLaboratorio },
   facturas: { titulo: "Facturación", roles: ["RECEPCION", "ADMINISTRADOR"], montar: montarFacturas },
   cartera: { titulo: "Cartera y glosas", roles: ["RECEPCION", "ADMINISTRADOR"], montar: montarCartera },
   convenios: { titulo: "Pagadores y convenios", roles: ["ADMINISTRADOR"], montar: montarConvenios },
@@ -33,7 +35,7 @@ const RUTAS = {
   usuarios: { titulo: "Usuarios", roles: ["ADMINISTRADOR"], montar: montarUsuarios },
   auditoria: { titulo: "Bitácora de auditoría", roles: ["ADMINISTRADOR"], montar: montarAuditoria },
 };
-const INICIO = { RECEPCION: "agenda", MEDICO: "mi-agenda", ADMINISTRADOR: "usuarios" };
+const INICIO = { RECEPCION: "agenda", MEDICO: "mi-agenda", ADMINISTRADOR: "usuarios", LABORATORIO: "laboratorio" };
 
 let principal = null;
 let navegacion = null;
