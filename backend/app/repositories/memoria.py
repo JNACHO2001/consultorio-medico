@@ -20,11 +20,15 @@ from app.core.auditoria import auditar as _auditar
 from app.domain.excepciones import NoEncontrado
 from app.domain.modelos import (
     AreaApoyo,
+    Caja,
     Cita,
     Consulta,
     Convenio,
+    DocumentoElectronico,
     Entidad,
+    EstadoCaja,
     EstadoCita,
+    EstadoDocumentoElectronico,
     EstadoFactura,
     EstadoIngreso,
     EstadoOrden,
@@ -39,13 +43,16 @@ from app.domain.modelos import (
     ProcedimientoRealizado,
     Recordatorio,
     RegistroAuditoria,
+    TipoDocumentoElectronico,
     Usuario,
 )
 from app.repositories.interfaces import (
     IAuditoriaRepository,
+    ICajaRepository,
     ICitaRepository,
     IConsultaRepository,
     IConvenioRepository,
+    IDocumentoElectronicoRepository,
     IFacturaRepository,
     IIngresoRepository,
     IOrdenRepository,
@@ -584,4 +591,47 @@ class MemoryOrdenRepository(MemoryRepository[OrdenClinica], IOrdenRepository):
             ]
         encontradas.sort(key=lambda o: (o.fecha or datetime.min, o.id), reverse=True)
         _auditar(self._auditoria, "Orden", "LECTURA_MULTIPLE", ingreso_id or paciente_id or 0)
+        return encontradas
+
+
+class MemoryDocumentoElectronicoRepository(
+    MemoryRepository[DocumentoElectronico], IDocumentoElectronicoRepository
+):
+    def buscar(
+        self,
+        factura_id: Optional[int] = None,
+        tipo: Optional[TipoDocumentoElectronico] = None,
+        estado: Optional[EstadoDocumentoElectronico] = None,
+    ) -> list[DocumentoElectronico]:
+        with self._lock:
+            encontrados = [
+                copy.deepcopy(d)
+                for d in self._items
+                if d.activo
+                and (factura_id is None or d.factura_id == factura_id)
+                and (tipo is None or d.tipo == tipo)
+                and (estado is None or d.estado == estado)
+            ]
+        encontrados.sort(key=lambda d: d.id, reverse=True)
+        return encontrados
+
+
+class MemoryCajaRepository(MemoryRepository[Caja], ICajaRepository):
+    def obtener_abierta_de(self, cajero_id: int) -> Optional[Caja]:
+        with self._lock:
+            for caja in self._items:
+                if caja.activo and caja.cajero_id == cajero_id and caja.estado == EstadoCaja.ABIERTA:
+                    return copy.deepcopy(caja)
+        return None
+
+    def buscar(self, cajero_id: Optional[int] = None, estado: Optional[EstadoCaja] = None) -> list[Caja]:
+        with self._lock:
+            encontradas = [
+                copy.deepcopy(c)
+                for c in self._items
+                if c.activo
+                and (cajero_id is None or c.cajero_id == cajero_id)
+                and (estado is None or c.estado == estado)
+            ]
+        encontradas.sort(key=lambda c: c.id, reverse=True)
         return encontradas
