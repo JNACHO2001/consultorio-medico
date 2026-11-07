@@ -16,6 +16,35 @@ Prototipo de un sistema web para centralizar y proteger la información de pacie
 
 **Aplicación en línea:** <https://consultorio-medico-pty2.onrender.com>. En el plan gratuito el servicio se suspende si no se usa; la primera visita puede tardar unos segundos.
 
+## Qué hace el sistema
+
+| Área | Funciones |
+|---|---|
+| **Pacientes** | Registro, búsqueda y actualización, con documento único; historia clínica por paciente. |
+| **Agenda** | Citas con horarios libres, control de cruces, reprogramación y cancelación; recordatorios simulados 24 horas antes. |
+| **Consulta médica** | Registro de la consulta, cierre y notas aclaratorias (una consulta cerrada no se modifica); diagnóstico con catálogo CIE-10. |
+| **Ingreso y cuenta** | Admisión y egreso con convenio y autorización; procedimientos realizados con catálogo y tarifas, que quedan en la historia clínica. |
+| **Órdenes y resultados** | El médico solicita exámenes de laboratorio, imagenología o ECG; apoyo diagnóstico registra los resultados con valores de referencia y el servicio se carga a la cuenta. |
+| **Facturación y caja** | Facturación por procedimiento, pago y anulación; apertura y cierre de caja con diferencia y recibos consecutivos. |
+| **Pagadores y cartera** | Convenios con EPS, ARL y SOAT (tarifa, copago, cuota moderadora); radicación, abonos, glosas y antigüedad de cartera. |
+| **Factura electrónica** | Factura y notas crédito con CUFE/CUDE y XML descargable, con proveedor tecnológico simulado. |
+| **RIPS** | Borrador en JSON con validación de datos. |
+| **Seguridad y control** | Usuarios con roles, bitácora de auditoría, contraseñas cifradas y sesiones que vencen. |
+
+## A quién va dirigido
+
+| Quién | Cómo lo usa |
+|---|---|
+| **Consultorio médico pequeño** (médico independiente o grupo de pocos médicos) | Agenda, historia clínica, consultas y cobro. Puede ignorar los módulos de IPS. |
+| **Centro médico o IPS pequeña** | Además: ingresos, órdenes de laboratorio, convenios con EPS, cartera con glosas, caja y facturación electrónica. |
+| **Recepción y caja** | Pacientes, citas, facturación, cobros, caja y cartera. Sin acceso a información clínica. |
+| **Médicos** | Su agenda, las consultas, la historia clínica, los procedimientos, el diagnóstico y las órdenes de sus pacientes. |
+| **Laboratorio o apoyo diagnóstico** | Cola de órdenes y registro de resultados. |
+| **Administración** | Usuarios, catálogo, convenios, cartera, RIPS, auditoría y consulta de documentos electrónicos y turnos de caja. |
+| **Estudiantes y docentes** | Ejemplo de arquitectura por capas con patrón Repository, UML, pruebas automáticas y despliegue en la nube. |
+
+> **Antes de usarlo con pacientes reales** hacen falta una base de datos con copias de seguridad (hoy los datos viven en memoria), un proveedor tecnológico autorizado para la facturación electrónica, un servidor siempre activo con HTTPS y la revisión legal de la protección de datos de salud y de la historia clínica. Ver *Alcance del prototipo*.
+
 ## Cómo ejecutarlo
 
 Requisitos: Python 3.12 o superior.
