@@ -318,3 +318,10 @@ dialog.ancho { width: min(760px, calc(100vw - 2rem)); }
 td.vencida { color: var(--cancelada); font-weight: 700; }
 table tfoot th { position: static; background: #f6f9f8; color: var(--tinta); }
 .sin-corte th, .sin-corte td { white-space: nowrap; }
+
+/* ---------- órdenes y resultados ---------- */
+tr.alterado td { background: #fdf3f1; }
+tr.alterado td:nth-child(2) { color: var(--cancelada); }
+.resultado-edicion input { min-height: 34px; padding: .25rem .5rem; }
+.resultado-edicion td { padding: .3rem .35rem; }
+.resultado-edicion th:nth-child(1) { width: 30%; }
