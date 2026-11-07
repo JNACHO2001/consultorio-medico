@@ -12,15 +12,18 @@ from datetime import date, datetime
 from typing import Generic, Optional, TypeVar
 
 from app.domain.modelos import (
+    AreaApoyo,
     Cita,
     Consulta,
     Convenio,
     EstadoCita,
     EstadoFactura,
     EstadoIngreso,
+    EstadoOrden,
     Factura,
     Ingreso,
     NotaAclaratoria,
+    OrdenClinica,
     Pagador,
     Paciente,
     Procedimiento,
@@ -179,3 +182,16 @@ class IAuditoriaRepository(ABC):
         limite: int = 200,
     ) -> list[RegistroAuditoria]:
         """Registros más recientes primero."""
+
+
+class IOrdenRepository(IRepository[OrdenClinica]):
+    @abstractmethod
+    def buscar(
+        self,
+        estado: Optional[EstadoOrden] = None,
+        ingreso_id: Optional[int] = None,
+        paciente_id: Optional[int] = None,
+        area: Optional[AreaApoyo] = None,
+        medico_id: Optional[int] = None,
+    ) -> list[OrdenClinica]:
+        """Órdenes que cumplen los filtros, de la más reciente a la más antigua."""
