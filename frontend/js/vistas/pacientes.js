@@ -4,6 +4,7 @@ import {
   TIPOS_INGRESO,
 } from "../ui.js";
 import { abrirAdmision } from "./admision.js";
+import { abrirResultado, tablaOrdenes } from "./ordenes.js";
 
 const TIPOS = [["CC", "Cédula de ciudadanía"], ["TI", "Tarjeta de identidad"], ["CE", "Cédula de extranjería"], ["PA", "Pasaporte"], ["RC", "Registro civil"]];
 
@@ -83,6 +84,7 @@ export async function montarPacientes(raiz, { usuario }) {
     const panel = h("section", { class: "panel" }, h("h3", {}, esMedico ? "Ingresos y procedimientos" : "Ingresos y cuentas"));
     try {
       const ingresos = await api.get(`/api/pacientes/${id}/ingresos`);
+      const ordenes = esMedico ? await api.get("/api/ordenes", { paciente_id: id }) : [];
       if (!ingresos.length) panel.append(vacio("Este paciente no tiene ingresos."));
       for (const i of ingresos) {
         panel.append(h("article", { class: "consulta-previa" },
@@ -94,6 +96,10 @@ export async function montarPacientes(raiz, { usuario }) {
               p.anulado ? " (anulado)" : h("span", { class: "suave num" }, ` · ${pesos(p.subtotal)}`),
               p.observaciones ? h("div", { class: "suave pequeno" }, p.observaciones) : null)))
             : h("p", { class: "suave pequeno" }, "Sin procedimientos registrados."),
+          ordenes.some((o) => o.ingreso_id === i.id) ? h("div", {}, h("h3", {}, "Órdenes y resultados"),
+            tablaOrdenes(ordenes.filter((o) => o.ingreso_id === i.id), {
+              acciones: (o) => (o.estado === "REALIZADA" ? [h("button", { class: "btn btn-pequeno", type: "button", onclick: () => abrirResultado(o) }, "Ver resultado")] : []),
+            })) : null,
           h("p", { class: "pequeno" }, h("b", {}, `Total ${pesos(i.total)}`), i.pendiente_facturar ? ` · por facturar ${pesos(i.pendiente_facturar)}` : "", " · ",
             h("a", { href: `#/ingreso/${i.id}` }, "Abrir cuenta"))));
       }
