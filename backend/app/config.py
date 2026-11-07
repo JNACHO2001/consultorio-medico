@@ -38,6 +38,16 @@ class Configuracion:
     ips_nombre: str = "Salud Integral (demostración)"
     ips_nit: str = "900000000-0"
     ips_codigo_habilitacion: str = "0000000000"
+    # Facturación electrónica. Los valores por defecto son los del ambiente de pruebas (habilitación).
+    dian_ambiente: str = "2"  # 1 producción, 2 pruebas
+    dian_prefijo: str = "SETP"
+    dian_resolucion: str = "18760000001"
+    dian_rango_desde: int = 990000000
+    dian_rango_hasta: int = 995000000
+    dian_clave_tecnica: str = "fc8eac422eba16e22ffd8c6f94b3f40a6e38162c"
+    dian_pin_software: str = "75315"
+    dian_obligatoria: bool = True  # RN-20: no se radica una factura sin factura electrónica aceptada
+    caja_obligatoria: bool = True  # RN-23: el cajero necesita una caja abierta para cobrar al paciente
 
 
 def cargar_configuracion() -> Configuracion:
@@ -61,4 +71,13 @@ def cargar_configuracion() -> Configuracion:
         ips_nombre=os.getenv("IPS_NOMBRE", "Salud Integral (demostración)"),
         ips_nit=os.getenv("IPS_NIT", "900000000-0"),
         ips_codigo_habilitacion=os.getenv("IPS_CODIGO_HABILITACION", "0000000000"),
+        dian_ambiente=os.getenv("DIAN_AMBIENTE", "2"),
+        dian_prefijo=os.getenv("DIAN_PREFIJO", "SETP"),
+        dian_resolucion=os.getenv("DIAN_RESOLUCION", "18760000001"),
+        dian_rango_desde=int(os.getenv("DIAN_RANGO_DESDE", "990000000")),
+        dian_rango_hasta=int(os.getenv("DIAN_RANGO_HASTA", "995000000")),
+        dian_clave_tecnica=os.getenv("DIAN_CLAVE_TECNICA", "fc8eac422eba16e22ffd8c6f94b3f40a6e38162c"),
+        dian_pin_software=os.getenv("DIAN_PIN_SOFTWARE", "75315"),
+        dian_obligatoria=_booleano(os.getenv("DIAN_OBLIGATORIA"), True),
+        caja_obligatoria=_booleano(os.getenv("CAJA_OBLIGATORIA"), True),
     )
