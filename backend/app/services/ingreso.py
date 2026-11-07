@@ -10,6 +10,7 @@ from app.core.tiempo import ahora_local
 from app.domain.excepciones import Conflicto, NoEncontrado, Prohibido, ReglaNegocio
 from app.domain.modelos import (
     EstadoIngreso,
+    EstadoOrden,
     Ingreso,
     ProcedimientoRealizado,
     Rol,
@@ -18,6 +19,7 @@ from app.domain.modelos import (
 )
 from app.repositories.interfaces import (
     IIngresoRepository,
+    IOrdenRepository,
     IPacienteRepository,
     IProcedimientoRealizadoRepository,
     IUsuarioRepository,
@@ -39,7 +41,9 @@ class IngresoService:
         usuarios: IUsuarioRepository,
         config: Configuracion,
         convenios: ConvenioService,
+        ordenes: IOrdenRepository,
     ) -> None:
+        self._ordenes = ordenes
         self._convenios = convenios
         self._ingresos = ingresos
         self._realizados = realizados
@@ -120,6 +124,11 @@ class IngresoService:
         """El médico tratante da de alta al paciente; se sigue pudiendo facturar lo pendiente."""
         with self._lock:
             ingreso = self._propio_abierto(ingreso_id, medico, "dar el egreso")
+            pendientes = self._ordenes.buscar(estado=EstadoOrden.SOLICITADA, ingreso_id=ingreso_id)
+            if pendientes:
+                raise ReglaNegocio(
+                    f"Hay {len(pendientes)} orden(es) sin resultado: anúlelas o espere el resultado antes del egreso."
+                )
             ingreso.estado = EstadoIngreso.EGRESADO
             ingreso.fecha_egreso = ahora_local(self._config.zona_horaria)
             ingreso.resumen_egreso = (resumen or "").strip()
@@ -136,30 +145,46 @@ class IngresoService:
         observaciones: str = "",
     ) -> ProcedimientoRealizado:
         """Carga un procedimiento a la cuenta del ingreso y a la historia clínica (RN-09, RN-10)."""
-        if not isinstance(cantidad, int) or not 1 <= cantidad <= CANTIDAD_MAXIMA:
-            raise ReglaNegocio(f"La cantidad debe estar entre 1 y {CANTIDAD_MAXIMA}.")
         with self._lock:
             ingreso = self._propio_abierto(ingreso_id, medico, "registrar procedimientos")
-            catalogo = self._catalogo.obtener(procedimiento_id)
-            convenio = (
-                self._convenios.obtener_convenio(ingreso.convenio_id) if ingreso.convenio_id is not None else None
+            return self._cargar(ingreso, procedimiento_id, cantidad, observaciones)
+
+    def cargar_servicio_de_apoyo(
+        self, ingreso_id: int, procedimiento_id: int, cantidad: int, observaciones: str = ""
+    ) -> ProcedimientoRealizado:
+        """Carga a la cuenta un servicio de apoyo diagnóstico ya realizado (resultado registrado).
+
+        Lo registra apoyo diagnóstico, no el médico; queda a nombre del médico tratante.
+        """
+        with self._lock:
+            ingreso = self.obtener(ingreso_id)
+            if ingreso.estado != EstadoIngreso.ABIERTO:
+                raise ReglaNegocio("El ingreso ya tiene egreso: no se pueden cargar más servicios.")
+            return self._cargar(ingreso, procedimiento_id, cantidad, observaciones)
+
+    def _cargar(
+        self, ingreso: Ingreso, procedimiento_id: int, cantidad: int, observaciones: str
+    ) -> ProcedimientoRealizado:
+        if not isinstance(cantidad, int) or not 1 <= cantidad <= CANTIDAD_MAXIMA:
+            raise ReglaNegocio(f"La cantidad debe estar entre 1 y {CANTIDAD_MAXIMA}.")
+        catalogo = self._catalogo.obtener(procedimiento_id)
+        convenio = self._convenios.obtener_convenio(ingreso.convenio_id) if ingreso.convenio_id is not None else None
+        return self._realizados.agregar(
+            ProcedimientoRealizado(
+                ingreso_id=ingreso.id,
+                paciente_id=ingreso.paciente_id,
+                medico_id=ingreso.medico_id,
+                procedimiento_id=catalogo.id,
+                codigo=catalogo.codigo,
+                nombre=catalogo.nombre,
+                cups=catalogo.cups,
+                tipo_servicio=catalogo.tipo_servicio,
+                cantidad=cantidad,
+                valor_unitario=calcular_precio(catalogo.tarifa, convenio),
+                fecha_hora=ahora_local(self._config.zona_horaria),
+                observaciones=(observaciones or "").strip(),
             )
-            return self._realizados.agregar(
-                ProcedimientoRealizado(
-                    ingreso_id=ingreso.id,
-                    paciente_id=ingreso.paciente_id,
-                    medico_id=medico.id,
-                    procedimiento_id=catalogo.id,
-                    codigo=catalogo.codigo,
-                    nombre=catalogo.nombre,
-                    cups=catalogo.cups,
-                    tipo_servicio=catalogo.tipo_servicio,
-                    cantidad=cantidad,
-                    valor_unitario=calcular_precio(catalogo.tarifa, convenio),
-                    fecha_hora=ahora_local(self._config.zona_horaria),
-                    observaciones=(observaciones or "").strip(),
-                )
-            )
+        )
 
     def registrar_diagnostico(self, ingreso_id: int, medico: Usuario, codigo_cie10: str) -> Ingreso:
         """El médico tratante fija el diagnóstico principal (CIE-10) que el RIPS necesita."""
