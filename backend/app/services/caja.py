@@ -2,7 +2,7 @@
 
 Cada pago recibido de un paciente o de un pagador genera un recibo de caja con consecutivo.
 Los pagos que recibe el cajero quedan en su turno de caja; al cerrarlo se cuenta el efectivo y
-se compara con lo que el sistema espera (RN-22 a RN-24).
+se compara con lo que el sistema espera (RN-24 a RN-26).
 """
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ class CajaService:
         return f"RC-{numero:06d}"
 
     def caja_para_cobrar(self, usuario: Optional[Usuario]) -> Optional[Caja]:
-        """Caja abierta del cajero. Con `caja_obligatoria`, cobrar sin caja abierta no se permite (RN-23)."""
+        """Caja abierta del cajero. Con `caja_obligatoria`, cobrar sin caja abierta no se permite (RN-25)."""
         caja = self._cajas.obtener_abierta_de(usuario.id) if usuario is not None else None
         if caja is None and self._config.caja_obligatoria and usuario is not None:
             raise ReglaNegocio("Abra su caja antes de cobrar: el pago debe quedar en un turno de caja.")
@@ -116,7 +116,7 @@ class CajaService:
         )
 
     def cerrar(self, caja_id: int, cajero: Usuario, efectivo_contado: int, observaciones: str = "") -> Caja:
-        """Cierra el turno comparando el efectivo contado con el esperado (base + cobros en efectivo)."""
+        """Cierra el turno comparando el efectivo contado con el esperado: base + cobros en efectivo (RN-26)."""
         if not isinstance(efectivo_contado, int) or isinstance(efectivo_contado, bool) or efectivo_contado < 0:
             raise ReglaNegocio("El efectivo contado debe ser un valor entero en pesos, de cero en adelante.")
         observaciones = (observaciones or "").strip()
