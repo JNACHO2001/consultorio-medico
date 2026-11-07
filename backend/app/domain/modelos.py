@@ -18,6 +18,7 @@ class Rol(str, Enum):
     RECEPCION = "RECEPCION"
     MEDICO = "MEDICO"
     ADMINISTRADOR = "ADMINISTRADOR"
+    LABORATORIO = "LABORATORIO"  # apoyo diagnóstico: recibe órdenes y registra resultados
 
 
 class EstadoCita(str, Enum):
@@ -47,6 +48,26 @@ class EstadoFactura(str, Enum):
     EMITIDA = "EMITIDA"
     PAGADA = "PAGADA"
     ANULADA = "ANULADA"
+
+
+class AreaApoyo(str, Enum):
+    """Servicio de apoyo diagnóstico que realiza un procedimiento ordenado por el médico."""
+
+    NINGUNA = "NINGUNA"
+    LABORATORIO = "LABORATORIO"
+    IMAGENOLOGIA = "IMAGENOLOGIA"
+    DIAGNOSTICO = "DIAGNOSTICO"  # electrocardiograma, espirometría, etc.
+
+
+class EstadoOrden(str, Enum):
+    SOLICITADA = "SOLICITADA"
+    REALIZADA = "REALIZADA"
+    ANULADA = "ANULADA"
+
+
+class PrioridadOrden(str, Enum):
+    RUTINA = "RUTINA"
+    URGENTE = "URGENTE"
 
 
 class MetodoPago(str, Enum):
@@ -225,6 +246,7 @@ class Procedimiento(Entidad):
     tarifa: int = 0
     cups: str = ""
     tipo_servicio: TipoServicio = TipoServicio.PROCEDIMIENTO
+    area_apoyo: AreaApoyo = AreaApoyo.NINGUNA  # distinta de NINGUNA: se puede ordenar y la realiza apoyo diagnóstico
 
 
 @dataclass
@@ -407,3 +429,58 @@ class Factura(Entidad):
     def saldada(self) -> bool:
         """Sin saldos y sin glosas en disputa: la factura queda cerrada."""
         return self.saldo == 0 and self.glosa_en_disputa == 0
+
+
+@dataclass
+class ResultadoValor:
+    """Una línea de un resultado: parámetro medido, valor, unidad y rango de referencia."""
+
+    parametro: str = ""
+    valor: str = ""
+    unidad: str = ""
+    ref_min: Optional[float] = None
+    ref_max: Optional[float] = None
+
+    @property
+    def alterado(self) -> Optional[bool]:
+        """True si el valor numérico queda fuera del rango; None si no se puede comparar."""
+        try:
+            numero = float(self.valor.replace(",", "."))
+        except ValueError:
+            return None
+        if self.ref_min is None and self.ref_max is None:
+            return None
+        if self.ref_min is not None and numero < self.ref_min:
+            return True
+        if self.ref_max is not None and numero > self.ref_max:
+            return True
+        return False
+
+
+@dataclass
+class OrdenClinica(Entidad):
+    """Orden de un servicio de apoyo diagnóstico dada por el médico tratante (RF-23).
+
+    Al registrarse el resultado, el servicio se carga a la cuenta del ingreso como
+    procedimiento realizado y queda en la historia clínica.
+    """
+
+    ingreso_id: int = 0
+    paciente_id: int = 0
+    medico_id: int = 0
+    procedimiento_id: int = 0
+    codigo: str = ""
+    nombre: str = ""
+    cups: str = ""
+    area: AreaApoyo = AreaApoyo.LABORATORIO
+    cantidad: int = 1
+    prioridad: PrioridadOrden = PrioridadOrden.RUTINA
+    indicacion: str = ""
+    fecha: Optional[datetime] = None
+    estado: EstadoOrden = EstadoOrden.SOLICITADA
+    valores: list[ResultadoValor] = field(default_factory=list)
+    interpretacion: str = ""
+    fecha_resultado: Optional[datetime] = None
+    registrado_por_id: Optional[int] = None
+    realizado_id: Optional[int] = None  # cargo generado en la cuenta al registrar el resultado
+    motivo_anulacion: str = ""
