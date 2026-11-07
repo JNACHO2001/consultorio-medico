@@ -7,6 +7,7 @@ Prototipo de un sistema web para centralizar y proteger la información de pacie
 - **Backend:** Python 3.12+ con FastAPI.
 - **Frontend:** JavaScript puro (módulos ES), sin paso de compilación. FastAPI lo sirve en la raíz (`/`).
 - **Módulo de ingresos y facturación (estilo "mini salud facil"):** lista de todos los pacientes, ingreso del paciente, procedimientos realizados que quedan en su historia clínica y facturación por procedimiento.
+- **Módulo de IPS:** pagadores y convenios (EPS, ARL, SOAT) con tarifa pactada, copago, cuota moderadora y autorización; cartera con radicación, abonos, glosas y antigüedad; borrador de RIPS con validación de datos.
 - **Patrón principal:** Repository. Los datos viven en **listas de objetos en memoria**, accedidas solo a través de interfaces de repositorio.
 
 > Prototipo académico. Los pacientes y usuarios de demostración son ficticios. Los datos se pierden al reiniciar el servidor.
@@ -40,13 +41,28 @@ La contraseña de todos es `Salud2026*`.
 
 | Usuario | Rol | Qué puede hacer |
 |---|---|---|
-| `recepcion1`, `recepcion2` | Recepción | Listar y registrar pacientes, agendar citas, **ingresar pacientes, facturar y cobrar procedimientos**. No ve información clínica. |
-| `dr.perez`, `dra.gomez`, `dr.rojas`, `dra.torres` | Médico | Ver su agenda, atender citas, registrar y cerrar consultas, agregar notas aclaratorias, ver historias clínicas, **registrar procedimientos a sus pacientes ingresados y dar el egreso**. |
-| `admin` | Administrador | Crear y desactivar usuarios, consultar la bitácora de auditoría, ver y procesar recordatorios, gestionar el catálogo de procedimientos y tarifas, consultar facturas. |
+| `recepcion1`, `recepcion2` | Recepción | Listar y registrar pacientes, agendar citas, **ingresar pacientes con su convenio, facturar, cobrar el copago, radicar facturas y gestionar abonos y glosas**. No ve información clínica. |
+| `dr.perez`, `dra.gomez`, `dr.rojas`, `dra.torres` | Médico | Ver su agenda, atender citas, registrar y cerrar consultas, agregar notas aclaratorias, ver historias clínicas, **registrar procedimientos y el diagnóstico CIE-10 de sus pacientes ingresados y dar el egreso**. |
+| `admin` | Administrador | Crear y desactivar usuarios, consultar la bitácora de auditoría, ver y procesar recordatorios, gestionar el catálogo (con CUPS), **pagadores y convenios**, **cartera y glosas**, generar el **borrador de RIPS**, consultar facturas. |
 
 Una prueba rápida de citas: entre como `recepcion1`, vaya al día siguiente y agende una cita; luego entre como `dr.perez`, abra su agenda del día siguiente y atienda esa cita.
 
 Prueba rápida de ingresos y facturación: como `recepcion1` abra *Pacientes*, elija uno y pulse *Ingresar paciente* (médico `Dr. Andrés Pérez`); salga y entre como `dr.perez`, abra *Ingresos* → *Abrir cuenta* y use *Registrar procedimiento* varias veces; vuelva como `recepcion1`, abra la cuenta del ingreso, pulse *Facturar pendientes*, genere la factura y *Registre el pago*.
+
+Prueba rápida de convenios y cartera: como `recepcion1` ingrese un paciente con el convenio *EPS Demo B · Subsidiado* (pide número de autorización); como `dr.perez` registre procedimientos y un diagnóstico (por ejemplo `R074`); como `recepcion1` facture, cobre el copago al paciente, *Radique al pagador*, registre un abono y una glosa y respóndala; en *Cartera y glosas* vea la antigüedad. Como `admin`, abra *RIPS*, genere el borrador del mes y descárguelo en JSON.
+
+### Reglas del módulo de IPS
+
+| Regla | Descripción |
+|---|---|
+| RN-14 | El valor de un procedimiento es la tarifa base por el porcentaje del convenio; se copia al registrarlo. |
+| RN-15 | La cuenta se reparte entre paciente (copago % + cuota moderadora, una vez por ingreso) y pagador. |
+| RN-16 | Un convenio que exige autorización pide el número al ingresar al paciente. |
+| RN-17 | Una factura con pagos recibidos o ya radicada no se puede anular. |
+| RN-18 | El pagador solo abona sobre facturas radicadas y hasta su saldo libre de glosas en disputa. |
+| RN-19 | Solo se glosan facturas radicadas; la glosa pasa de abierta a respondida y termina aceptada o levantada. |
+
+Endpoints nuevos: `/api/pagadores`, `/api/convenios`, `/api/cartera`, `/api/rips`, `/api/facturas/{id}/radicar`, `/pagos-pagador`, `/glosas` e `/api/ingresos/{id}/diagnostico`. Los valores son pesos colombianos enteros.
 
 ### Pruebas automáticas
 
@@ -56,11 +72,11 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Son 82 pruebas: contrato de los repositorios, reglas de negocio (documento único, cruce de citas, consulta cerrada, un ingreso abierto por paciente, valor congelado, factura única por procedimiento), permisos por rol, sesiones y bitácora.
+Son 116 pruebas: contrato de los repositorios, reglas de negocio (documento único, cruce de citas, consulta cerrada, un ingreso abierto por paciente, valor congelado, factura única por procedimiento, tarifas y copagos por convenio, radicación, abonos, glosas, RIPS), permisos por rol, sesiones y bitácora.
 
 ### Configuración
 
-Variables de entorno opcionales (ver `.env.example`): `SECRET_KEY`, `TZ_CONSULTORIO`, `JORNADA_INICIO`, `JORNADA_FIN`, `DURACION_CITA_MIN`, `TOKEN_MINUTOS`, `RECORDATORIO_HORAS`, `SEMBRAR_DATOS_DEMO`, `RECORDATORIOS_AUTOMATICOS`. Defina `SECRET_KEY` en cualquier despliegue real; si no, se genera una al arrancar y las sesiones se pierden al reiniciar.
+Variables de entorno opcionales (ver `.env.example`): `SECRET_KEY`, `TZ_CONSULTORIO`, `JORNADA_INICIO`, `JORNADA_FIN`, `DURACION_CITA_MIN`, `TOKEN_MINUTOS`, `RECORDATORIO_HORAS`, `SEMBRAR_DATOS_DEMO`, `RECORDATORIOS_AUTOMATICOS`, `IPS_NOMBRE`, `IPS_NIT`, `IPS_CODIGO_HABILITACION` (datos del prestador que salen en el RIPS). Defina `SECRET_KEY` en cualquier despliegue real; si no, se genera una al arrancar y las sesiones se pierden al reiniciar.
 
 ## Arquitectura
 
@@ -101,12 +117,14 @@ Los servicios dependen de interfaces (`IPacienteRepository`, `ICitaRepository`�
 
 ## Alcance del prototipo
 
-Implementado: registro, listado completo, búsqueda y actualización de pacientes; ingreso (admisión) y egreso; procedimientos realizados con catálogo y tarifas, que quedan en la historia clínica; facturación por procedimiento con pago y anulación; agenda con horarios libres, cruce de citas, reprogramación y cancelación; consultas médicas con cierre y notas aclaratorias; historia clínica; usuarios y roles; bitácora de auditoría; recordatorios simulados.
+Implementado: registro, listado completo, búsqueda y actualización de pacientes; ingreso (admisión) y egreso; procedimientos realizados con catálogo y tarifas, que quedan en la historia clínica; facturación por procedimiento con pago y anulación; pagadores y convenios; cartera con radicación, abonos, glosas y antigüedad; borrador de RIPS; agenda con horarios libres, cruce de citas, reprogramación y cancelación; consultas médicas con cierre y notas aclaratorias; historia clínica; usuarios y roles; bitácora de auditoría; recordatorios simulados.
 
 No implementado (queda como trabajo futuro):
 
 - **RF-09, adjuntar documentos** a la historia clínica.
 - **RF-14, reportes** de gestión.
+- **Facturación electrónica ante la DIAN**, validación oficial del RIPS ante el Ministerio de Salud y catálogo completo CIE-10/CUPS (los CUPS de la demostración son ejemplos).
+- Hospitalización con camas, órdenes y resultados de laboratorio, inventario y nómina.
 - Persistencia real: al reiniciar, los datos vuelven a los de demostración.
 - Un solo proceso: con varios procesos cada uno tendría sus propios datos en memoria.
 - Envío real de correos o mensajes.
