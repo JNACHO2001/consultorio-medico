@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta
 
 from app.container import Contenedor
 from app.core.tiempo import ahora_local
-from app.domain.modelos import Rol, TipoPagador, TipoServicio
+from app.domain.modelos import AreaApoyo, Rol, TipoPagador, TipoServicio
 
 USUARIOS_DEMO = [
     ("admin", "Administrador del consultorio", Rol.ADMINISTRADOR, "", ""),
@@ -21,6 +21,7 @@ USUARIOS_DEMO = [
     ("dra.gomez", "Dra. Sofía Gómez", Rol.MEDICO, "Medicina general", "RM-1002"),
     ("dr.rojas", "Dr. Mateo Rojas", Rol.MEDICO, "Medicina general", "RM-1003"),
     ("dra.torres", "Dra. Valentina Torres", Rol.MEDICO, "Medicina interna", "RM-2001"),
+    ("lab1", "Sandra Quintero", Rol.LABORATORIO, "", ""),
 ]
 
 PACIENTES_DEMO = [
@@ -45,18 +46,20 @@ PACIENTES_DEMO = [
 # Los CUPS son de ejemplo, verifíquelos con el manual vigente; los que se dejan vacíos
 # sirven para ver cómo el borrador del RIPS avisa de lo que falta.
 CONSULTA, PROCEDIMIENTO = TipoServicio.CONSULTA, TipoServicio.PROCEDIMIENTO
+LAB, IMG, DIAG = AreaApoyo.LABORATORIO, AreaApoyo.IMAGENOLOGIA, AreaApoyo.DIAGNOSTICO
 CATALOGO_DEMO = [
-    ("CON-GEN", "Consulta de medicina general", 60000, "890201", CONSULTA),
-    ("CON-ESP", "Consulta de medicina interna", 95000, "", CONSULTA),
-    ("CUR-SIM", "Curación simple", 25000, "", PROCEDIMIENTO),
-    ("SUT-SIM", "Sutura de herida simple", 85000, "", PROCEDIMIENTO),
-    ("INY-IM", "Aplicación de inyectología", 12000, "", PROCEDIMIENTO),
-    ("NEB-001", "Nebulización", 30000, "", PROCEDIMIENTO),
-    ("ECG-001", "Electrocardiograma", 55000, "895100", PROCEDIMIENTO),
-    ("LAB-HEM", "Hemograma completo", 28000, "902210", PROCEDIMIENTO),
-    ("LAB-GLU", "Glicemia en ayunas", 15000, "903841", PROCEDIMIENTO),
-    ("RX-TOR", "Radiografía de tórax", 70000, "", PROCEDIMIENTO),
-    ("OBS-HOR", "Observación por hora", 40000, "", PROCEDIMIENTO),
+    ("CON-GEN", "Consulta de medicina general", 60000, "890201", CONSULTA, AreaApoyo.NINGUNA),
+    ("CON-ESP", "Consulta de medicina interna", 95000, "", CONSULTA, AreaApoyo.NINGUNA),
+    ("CUR-SIM", "Curación simple", 25000, "", PROCEDIMIENTO, AreaApoyo.NINGUNA),
+    ("SUT-SIM", "Sutura de herida simple", 85000, "", PROCEDIMIENTO, AreaApoyo.NINGUNA),
+    ("INY-IM", "Aplicación de inyectología", 12000, "", PROCEDIMIENTO, AreaApoyo.NINGUNA),
+    ("NEB-001", "Nebulización", 30000, "", PROCEDIMIENTO, AreaApoyo.NINGUNA),
+    ("ECG-001", "Electrocardiograma", 55000, "895100", PROCEDIMIENTO, DIAG),
+    ("LAB-HEM", "Hemograma completo", 28000, "902210", PROCEDIMIENTO, LAB),
+    ("LAB-GLU", "Glicemia en ayunas", 15000, "903841", PROCEDIMIENTO, LAB),
+    ("LAB-ORI", "Uroanálisis", 18000, "", PROCEDIMIENTO, LAB),
+    ("RX-TOR", "Radiografía de tórax", 70000, "", PROCEDIMIENTO, IMG),
+    ("OBS-HOR", "Observación por hora", 40000, "", PROCEDIMIENTO, AreaApoyo.NINGUNA),
 ]
 
 # Pagadores y convenios ficticios: (código, nombre, tipo, NIT, convenio, % tarifa, % copago, cuota, autorización).
@@ -73,8 +76,8 @@ def sembrar_datos_demo(c: Contenedor) -> None:
             nombre_usuario, c.config.contrasena_demo, nombre, rol, especialidad, registro
         )
 
-    for codigo, nombre, tarifa, cups, tipo_servicio in CATALOGO_DEMO:
-        c.catalogo.crear(codigo, nombre, tarifa, cups, tipo_servicio)
+    for codigo, nombre, tarifa, cups, tipo_servicio, area in CATALOGO_DEMO:
+        c.catalogo.crear(codigo, nombre, tarifa, cups, tipo_servicio, area)
 
     for codigo, nombre, tipo, nit, convenio, tarifa_pct, copago, cuota, autorizacion in PAGADORES_DEMO:
         pagador = c.convenios.crear_pagador(codigo, nombre, tipo, nit)
