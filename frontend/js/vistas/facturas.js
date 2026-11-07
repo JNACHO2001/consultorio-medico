@@ -3,6 +3,7 @@ import {
   abrirDialogo, alerta, anexar, areaTexto, aviso, campo, CONCEPTOS_GLOSA, datosDe, entrada, fechaHora, h, METODOS_PAGO, pesos, seleccion, sello,
 } from "../ui.js";
 import { vacio } from "./pacientes.js";
+import { abrirDocumento, bajarXml } from "./electronica.js";
 
 // Detalle de una factura en un diálogo.
 // `puedeOperar` (recepción) habilita cobrar al paciente y anular; `puedeCartera` (recepción o
@@ -64,6 +65,7 @@ export function abrirFactura(factura, { puedeOperar = false, puedeCartera = pued
           h("td", { class: "num-izq" }, l.codigo), h("td", {}, l.descripcion),
           h("td", { class: "num" }, l.cantidad), h("td", { class: "num" }, pesos(l.valor_unitario)), h("td", { class: "num" }, pesos(l.subtotal))))),
         h("tfoot", {}, h("tr", {}, h("th", { colspan: 4, class: "num" }, "Total"), h("th", { class: "num total" }, pesos(f.total)))))),
+      f.estado === "ANULADA" && !f.factura_electronica ? null : seccionElectronica(f, { puedeCartera, mensaje, ejecutar, refrescar }),
       f.estado === "ANULADA" ? null : desglose(f, hayPagador),
       hayPagador ? seccionCartera(f, { puedeCartera, mensaje, ejecutar, refrescar }) : null,
       f.pagos.length ? historialPagos(f) : null,
@@ -93,6 +95,9 @@ export function abrirFactura(factura, { puedeOperar = false, puedeCartera = pued
           },
         }, mensaje,
           h("p", {}, "Los procedimientos volverán a quedar pendientes y podrán facturarse de nuevo. Una factura con pagos recibidos o ya radicada al pagador no se puede anular."),
+          f.factura_electronica?.estado === "ACEPTADO"
+            ? h("p", { class: "nota-dian" }, `Esta factura ya tiene la factura electrónica ${f.factura_electronica.numero} aceptada: al anularla se emite automáticamente una nota crédito por ${pesos(f.factura_electronica.valor)}.`)
+            : null,
           campo("Motivo de la anulación", areaTexto("motivo", "", { rows: 2, required: true, maxlength: 300 })),
           h("div", { class: "acciones derecha" }, h("button", { class: "btn", type: "button", onclick: cerrar }, "Volver"), boton));
         cuerpo.append(form);
@@ -124,11 +129,63 @@ function desglose(f, hayPagador) {
 function historialPagos(f) {
   return h("section", { class: "subseccion" }, h("h3", {}, "Pagos recibidos"),
     h("div", { class: "tabla-contenedor" }, h("table", {},
-      h("thead", {}, h("tr", {}, ["Fecha", "Quién pagó", "Forma", "Referencia", "Valor"].map((t, i) => h("th", { class: i === 4 ? "num" : "" }, t)))),
+      h("thead", {}, h("tr", {}, ["Recibo", "Fecha", "Quién pagó", "Forma", "Referencia", "Valor"].map((t, i) => h("th", { class: i === 5 ? "num" : "" }, t)))),
       h("tbody", {}, f.pagos.map((p) => h("tr", {},
-        h("td", { class: "fecha" }, fechaHora(p.fecha)), h("td", {}, p.origen === "PAGADOR" ? f.pagador_nombre : "Paciente"),
+        h("td", { class: "num-izq" }, h("b", {}, p.recibo_numero || "—")), h("td", { class: "fecha" }, fechaHora(p.fecha)), h("td", {}, p.origen === "PAGADOR" ? f.pagador_nombre : "Paciente"),
         h("td", {}, METODOS_PAGO.find(([v]) => v === p.metodo)?.[1] || p.metodo), h("td", {}, p.referencia || "—"),
         h("td", { class: "num" }, pesos(p.valor))))))));
+}
+
+// Factura electrónica DIAN de la factura y sus notas crédito.
+function seccionElectronica(f, { puedeCartera, mensaje, ejecutar, refrescar }) {
+  const fe = f.factura_electronica;
+  const partes = [h("h3", {}, "Factura electrónica DIAN")];
+  const abrir = (doc) => h("button", { class: "btn btn-pequeno", type: "button", onclick: () => detalle(doc) }, "Ver detalle");
+  const detalle = async (doc) => {
+    try {
+      abrirDocumento(await api.get(`/api/electronica/documentos/${doc.id}`), { puedeOperar: puedeCartera, alCambiar: () => refrescarDesdeServidor() });
+    } catch (error) {
+      mensaje.replaceChildren(alerta(error));
+    }
+  };
+  const refrescarDesdeServidor = async () => refrescar(await api.get(`/api/facturas/${f.id}`));
+
+  if (!fe) {
+    if (f.estado === "ANULADA") return null;
+    partes.push(h("p", { class: "suave" }, f.dian_obligatoria
+      ? `Aún no se ha emitido. Se factura a ${f.valor_pagador > 0 ? f.pagador_nombre : "el paciente"} por ${pesos(f.valor_pagador > 0 ? f.valor_pagador : f.valor_paciente)}; es indispensable para radicar al pagador.`
+      : "Aún no se ha emitido."));
+    if (puedeCartera) {
+      const boton = h("button", { class: "btn btn-primario", type: "button" }, "Emitir factura electrónica");
+      boton.addEventListener("click", () => ejecutar(() => api.post(`/api/electronica/facturas/${f.id}/emitir`).then(() => api.get(`/api/facturas/${f.id}`)), "Documento enviado al proveedor.")(boton));
+      partes.push(h("div", { class: "acciones" }, boton));
+    }
+    return h("section", { class: "subseccion" }, partes);
+  }
+
+  partes.push(
+    h("div", { class: "fila-dian" }, h("b", { class: "num" }, fe.numero), sello(fe.estado), h("span", { class: "suave" }, `a ${fe.adquirente_nombre} · ${pesos(fe.valor)}`)),
+    h("p", { class: fe.estado === "RECHAZADO" ? "alerta" : "suave pequeno" }, fe.mensaje_respuesta),
+    h("code", { class: "cufe" }, fe.cufe),
+    h("div", { class: "acciones no-imprimir", style: "margin-top:.4rem" }, abrir(fe),
+      h("button", { class: "btn btn-pequeno", type: "button", onclick: () => bajarXml(fe) }, "Descargar XML")));
+
+  if (f.notas_credito.length) {
+    partes.push(h("h4", {}, "Notas crédito"), h("ul", { class: "glosas" }, f.notas_credito.map((n) => h("li", { class: "glosa" },
+      h("div", { class: "glosa-cabecera" }, h("b", { class: "num" }, n.numero), " · ", h("b", { class: "num" }, pesos(n.valor)), sello(n.estado)),
+      h("p", { class: "suave pequeno" }, n.motivo), h("div", { class: "acciones", style: "margin-top:.3rem" }, abrir(n))))));
+  }
+  const pendientes = fe.estado === "ACEPTADO" && puedeCartera
+    ? f.glosas.filter((g) => g.estado === "ACEPTADA" && !f.notas_credito.some((n) => n.glosa_id === g.id && n.estado !== "RECHAZADO"))
+    : [];
+  for (const g of pendientes) {
+    const boton = h("button", { class: "btn btn-pequeno", type: "button" }, `Emitir nota crédito por la glosa de ${pesos(g.valor)}`);
+    boton.addEventListener("click", () => ejecutar(
+      () => api.post(`/api/electronica/facturas/${f.id}/notas-credito`, { concepto: "GLOSA", glosa_id: g.id }).then(() => api.get(`/api/facturas/${f.id}`)),
+      "Nota crédito emitida.")(boton));
+    partes.push(h("div", { class: "acciones", style: "margin-top:.3rem" }, boton));
+  }
+  return h("section", { class: "subseccion" }, partes);
 }
 
 // Gestión frente al pagador: radicación, abonos y glosas.
@@ -141,7 +198,8 @@ function seccionCartera(f, { puedeCartera, mensaje, ejecutar, refrescar }) {
     const boton = h("button", { class: "btn btn-primario", type: "button" }, "Radicar al pagador");
     boton.addEventListener("click", () => ejecutar(
       () => api.post(`/api/facturas/${f.id}/radicar`, { numero_radicacion: numero.value.trim() }), "Factura radicada.")(boton));
-    partes.push(h("p", { class: "suave" }, "Aún no se ha radicado. El pagador solo puede abonar o glosar una factura radicada."),
+    partes.push(h("p", { class: "suave" }, "Aún no se ha radicado. El pagador solo puede abonar o glosar una factura radicada.",
+      f.dian_obligatoria && f.factura_electronica?.estado !== "ACEPTADO" ? " Antes debe tener su factura electrónica aceptada." : ""),
       puedeCartera ? h("div", { class: "pago" }, campo("Número de radicación", numero), boton) : null);
     return h("section", { class: "subseccion" }, partes);
   }
