@@ -13,9 +13,11 @@ from app.repositories.interfaces import (
     IAuditoriaRepository,
     ICitaRepository,
     IConsultaRepository,
+    IConvenioRepository,
     IFacturaRepository,
     IIngresoRepository,
     IPacienteRepository,
+    IPagadorRepository,
     IProcedimientoRealizadoRepository,
     IProcedimientoRepository,
     IRecordatorioRepository,
@@ -25,9 +27,11 @@ from app.repositories.memoria import (
     MemoryAuditoriaRepository,
     MemoryCitaRepository,
     MemoryConsultaRepository,
+    MemoryConvenioRepository,
     MemoryFacturaRepository,
     MemoryIngresoRepository,
     MemoryPacienteRepository,
+    MemoryPagadorRepository,
     MemoryProcedimientoRealizadoRepository,
     MemoryProcedimientoRepository,
     MemoryRecordatorioRepository,
@@ -36,12 +40,15 @@ from app.repositories.memoria import (
 from app.services.auditoria import AuditoriaService
 from app.services.autenticacion import AutenticacionService
 from app.services.catalogo import CatalogoService
+from app.services.cartera import CarteraService
 from app.services.cita import CitaService
 from app.services.consulta import ConsultaService
+from app.services.convenios import ConvenioService
 from app.services.facturacion import FacturacionService
 from app.services.ingreso import IngresoService
 from app.services.notificaciones import NotificacionService, NotificadorSimulado
 from app.services.paciente import PacienteService
+from app.services.rips import RipsService
 from app.services.usuario import UsuarioService
 
 
@@ -59,6 +66,8 @@ class Contenedor:
     repo_ingresos: IIngresoRepository
     repo_realizados: IProcedimientoRealizadoRepository
     repo_facturas: IFacturaRepository
+    repo_pagadores: IPagadorRepository
+    repo_convenios: IConvenioRepository
     # Servicios
     notificador: NotificadorSimulado
     notificaciones: NotificacionService
@@ -71,6 +80,9 @@ class Contenedor:
     catalogo: CatalogoService
     ingresos: IngresoService
     facturacion: FacturacionService
+    convenios: ConvenioService
+    cartera: CarteraService
+    rips: RipsService
 
 
 def crear_contenedor(config: Configuracion) -> Contenedor:
@@ -84,10 +96,15 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
     repo_ingresos = MemoryIngresoRepository(repo_auditoria)
     repo_realizados = MemoryProcedimientoRealizadoRepository(repo_auditoria)
     repo_facturas = MemoryFacturaRepository(repo_auditoria)
+    repo_pagadores = MemoryPagadorRepository()
+    repo_convenios = MemoryConvenioRepository()
 
     notificador = NotificadorSimulado()
     notificaciones = NotificacionService(repo_recordatorios, notificador, config)
     catalogo = CatalogoService(repo_procedimientos)
+    convenios = ConvenioService(repo_pagadores, repo_convenios)
+    convenios.asegurar_particular()  # siempre existe el pagador particular
+    facturacion = FacturacionService(repo_facturas, repo_realizados, repo_ingresos, config, convenios)
 
     return Contenedor(
         config=config,
@@ -101,6 +118,8 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
         repo_ingresos=repo_ingresos,
         repo_realizados=repo_realizados,
         repo_facturas=repo_facturas,
+        repo_pagadores=repo_pagadores,
+        repo_convenios=repo_convenios,
         notificador=notificador,
         notificaciones=notificaciones,
         autenticacion=AutenticacionService(repo_usuarios, repo_auditoria, config),
@@ -111,7 +130,12 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
         auditoria=AuditoriaService(repo_auditoria),
         catalogo=catalogo,
         ingresos=IngresoService(
-            repo_ingresos, repo_realizados, catalogo, repo_pacientes, repo_usuarios, config
+            repo_ingresos, repo_realizados, catalogo, repo_pacientes, repo_usuarios, config, convenios
         ),
-        facturacion=FacturacionService(repo_facturas, repo_realizados, repo_ingresos, config),
+        facturacion=facturacion,
+        convenios=convenios,
+        cartera=CarteraService(facturacion, repo_facturas, config),
+        rips=RipsService(
+            repo_facturas, repo_ingresos, repo_realizados, repo_pacientes, repo_auditoria, config
+        ),
     )
