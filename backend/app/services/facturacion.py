@@ -9,19 +9,23 @@ from app.config import Configuracion
 from app.core.tiempo import ahora_local
 from app.domain.excepciones import NoEncontrado, ReglaNegocio
 from app.domain.modelos import (
+    EstadoDocumentoElectronico,
     EstadoFactura,
     Factura,
     LineaFactura,
     MetodoPago,
     OrigenPago,
     PagoFactura,
+    TipoDocumentoElectronico,
     Usuario,
 )
 from app.repositories.interfaces import (
+    IDocumentoElectronicoRepository,
     IFacturaRepository,
     IIngresoRepository,
     IProcedimientoRealizadoRepository,
 )
+from app.services.caja import CajaService
 from app.services.convenios import ConvenioService, repartir_total
 
 
@@ -33,7 +37,11 @@ class FacturacionService:
         ingresos: IIngresoRepository,
         config: Configuracion,
         convenios: ConvenioService,
+        cajas: CajaService,
+        documentos: IDocumentoElectronicoRepository,
     ) -> None:
+        self._cajas = cajas
+        self._documentos = documentos
         self._convenios = convenios
         self._facturas = facturas
         self._realizados = realizados
@@ -141,6 +149,7 @@ class FacturacionService:
                 raise ReglaNegocio(f"La factura está {factura.estado.value.lower()}: solo se pagan las emitidas.")
             if factura.saldo_paciente <= 0:
                 raise ReglaNegocio("El paciente no tiene saldo pendiente en esta factura.")
+            caja = self._cajas.caja_para_cobrar(usuario)  # RN-23
             ahora = ahora_local(self._config.zona_horaria)
             factura.pagos.append(
                 PagoFactura(
@@ -149,6 +158,8 @@ class FacturacionService:
                     valor=factura.saldo_paciente,
                     fecha=ahora,
                     registrado_por_id=usuario.id if usuario else 0,
+                    recibo_numero=self._cajas.nuevo_recibo(),
+                    caja_id=caja.id if caja else None,
                 )
             )
             factura.metodo_pago = metodo
@@ -157,11 +168,11 @@ class FacturacionService:
                 factura.fecha_pago = ahora
             return self._facturas.actualizar(factura)
 
-    def anular(self, factura_id: int, motivo: str) -> Factura:
+    def anular(self, factura_id: int, motivo: str, desde_nota_credito: bool = False) -> Factura:
         """Anula una factura emitida y deja sus procedimientos otra vez pendientes (RN-13).
 
         Una factura pagada, con algún pago registrado o ya radicada al pagador no se anula
-        (RN-17): requeriría una nota crédito, fuera del alcance.
+        (RN-17). Con factura electrónica aceptada se anula con nota crédito (RN-21).
         """
         motivo = (motivo or "").strip()
         if not motivo:
@@ -172,6 +183,13 @@ class FacturacionService:
                 raise ReglaNegocio(f"La factura está {factura.estado.value.lower()}: solo se anulan las emitidas.")
             if factura.pagos:
                 raise ReglaNegocio("La factura ya tiene pagos registrados: no se puede anular.")
+            if not desde_nota_credito and any(
+                d.estado == EstadoDocumentoElectronico.ACEPTADO
+                for d in self._documentos.buscar(factura_id=factura.id, tipo=TipoDocumentoElectronico.FACTURA)
+            ):
+                raise ReglaNegocio(
+                    "La factura tiene factura electrónica aceptada: se anula con una nota crédito."
+                )
             if factura.radicada:
                 raise ReglaNegocio("La factura ya fue radicada al pagador: no se puede anular.")
             factura.estado = EstadoFactura.ANULADA
