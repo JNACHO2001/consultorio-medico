@@ -26,6 +26,8 @@ def config():
         secret_key="clave-solo-para-pruebas-0123456789-abcdef",
         iteraciones_hash=1000,  # hash rápido: solo para pruebas
         recordatorios_automaticos=False,
+        dian_obligatoria=False,  # las pruebas de DIAN y caja lo activan en su propio módulo
+        caja_obligatoria=False,
     )
 
 
