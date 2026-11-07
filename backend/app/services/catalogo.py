@@ -6,7 +6,7 @@ import threading
 from typing import Optional
 
 from app.domain.excepciones import Duplicado, NoEncontrado, ReglaNegocio
-from app.domain.modelos import Procedimiento, TipoServicio
+from app.domain.modelos import AreaApoyo, Procedimiento, TipoServicio
 from app.repositories.interfaces import IProcedimientoRepository
 
 TARIFA_MAXIMA = 100_000_000
@@ -49,6 +49,7 @@ class CatalogoService:
         tarifa: int,
         cups: str = "",
         tipo_servicio: TipoServicio = TipoServicio.PROCEDIMIENTO,
+        area_apoyo: AreaApoyo = AreaApoyo.NINGUNA,
     ) -> Procedimiento:
         codigo = (codigo or "").strip().upper()
         nombre = (nombre or "").strip()
@@ -62,7 +63,10 @@ class CatalogoService:
             if self._procedimientos.obtener_por_codigo(codigo):
                 raise Duplicado("Ya existe un procedimiento con ese código.")
             return self._procedimientos.agregar(
-                Procedimiento(codigo=codigo, nombre=nombre, tarifa=tarifa, cups=cups, tipo_servicio=tipo_servicio)
+                Procedimiento(
+                    codigo=codigo, nombre=nombre, tarifa=tarifa, cups=cups, tipo_servicio=tipo_servicio,
+                    area_apoyo=area_apoyo,
+                )
             )
 
     def actualizar(
@@ -72,6 +76,7 @@ class CatalogoService:
         tarifa: Optional[int] = None,
         cups: Optional[str] = None,
         tipo_servicio: Optional[TipoServicio] = None,
+        area_apoyo: Optional[AreaApoyo] = None,
     ) -> Procedimiento:
         """Cambia nombre, tarifa, CUPS o clase. Lo ya realizado conserva su valor original (RN-10)."""
         procedimiento = self.obtener(procedimiento_id)
@@ -86,6 +91,8 @@ class CatalogoService:
             procedimiento.cups = validar_cups(cups)
         if tipo_servicio is not None:
             procedimiento.tipo_servicio = tipo_servicio
+        if area_apoyo is not None:
+            procedimiento.area_apoyo = area_apoyo
         return self._procedimientos.actualizar(procedimiento)
 
     def desactivar(self, procedimiento_id: int) -> None:
