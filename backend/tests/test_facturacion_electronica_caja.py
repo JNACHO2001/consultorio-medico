@@ -1,4 +1,4 @@
-"""RF-25 a RF-27: factura electrónica DIAN (simulada), notas crédito, recibos y caja (RN-20 a RN-24)."""
+"""RF-25 a RF-27: factura electrónica DIAN (simulada), notas crédito, recibos y caja (RN-24 a RN-26)."""
 import dataclasses
 import re
 import xml.etree.ElementTree as ET
@@ -113,7 +113,7 @@ def test_un_pagador_sin_nit_es_rechazado_y_se_puede_reintentar(
     otra_vez = cliente.post(f"/api/electronica/documentos/{doc['id']}/reintentar", headers=recepcion).json()
     assert otra_vez["estado"] == "RECHAZADO" and otra_vez["numero"] == doc["numero"] and otra_vez["intentos"] == 2
 
-    # radicar sigue bloqueado mientras no haya factura aceptada (RN-20)
+    # radicar sigue bloqueado mientras no haya factura aceptada (RN-22)
     r = radicar(cliente, recepcion, factura)
     assert r.status_code == 422 and "factura electrónica" in r.json()["detail"]
 
