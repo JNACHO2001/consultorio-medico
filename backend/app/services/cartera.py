@@ -15,6 +15,7 @@ from app.core.tiempo import ahora_local
 from app.domain.excepciones import NoEncontrado, ReglaNegocio
 from app.domain.modelos import (
     ConceptoGlosa,
+    EstadoDocumentoElectronico,
     EstadoFactura,
     EstadoGlosa,
     Factura,
@@ -22,9 +23,11 @@ from app.domain.modelos import (
     MetodoPago,
     OrigenPago,
     PagoFactura,
+    TipoDocumentoElectronico,
     Usuario,
 )
-from app.repositories.interfaces import IFacturaRepository
+from app.repositories.interfaces import IDocumentoElectronicoRepository, IFacturaRepository
+from app.services.caja import CajaService
 from app.services.facturacion import FacturacionService
 
 TRAMOS = ("sin_radicar", "d0_30", "d31_60", "d61_90", "d_mas_90")
@@ -55,8 +58,15 @@ def tramo_de_edad(dias: int) -> str:
 
 class CarteraService:
     def __init__(
-        self, facturacion: FacturacionService, facturas: IFacturaRepository, config: Configuracion
+        self,
+        facturacion: FacturacionService,
+        facturas: IFacturaRepository,
+        config: Configuracion,
+        cajas: CajaService,
+        documentos: IDocumentoElectronicoRepository,
     ) -> None:
+        self._cajas = cajas
+        self._documentos = documentos
         self._facturacion = facturacion
         self._facturas = facturas
         self._config = config
@@ -88,6 +98,13 @@ class CarteraService:
             factura = self._a_cargo_del_pagador(factura_id, "radicar")
             if factura.radicada:
                 raise ReglaNegocio("La factura ya fue radicada.")
+            if self._config.dian_obligatoria and not any(
+                d.estado == EstadoDocumentoElectronico.ACEPTADO
+                for d in self._documentos.buscar(factura_id=factura.id, tipo=TipoDocumentoElectronico.FACTURA)
+            ):
+                raise ReglaNegocio(
+                    "Emita la factura electrónica y espere su aceptación antes de radicar la factura al pagador."
+                )
             ahora = self._ahora()
             factura.fecha_radicacion = ahora
             factura.numero_radicacion = (numero or "").strip() or f"RAD-{ahora.year}-{factura.id:05d}"
@@ -123,6 +140,7 @@ class CarteraService:
                     fecha=self._ahora(),
                     referencia=(referencia or "").strip(),
                     registrado_por_id=usuario.id,
+                    recibo_numero=self._cajas.nuevo_recibo(),
                 )
             )
             self._cerrar_si_saldada(factura, metodo)
