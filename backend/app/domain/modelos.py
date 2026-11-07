@@ -56,6 +56,47 @@ class MetodoPago(str, Enum):
     EPS = "EPS"
 
 
+class TipoPagador(str, Enum):
+    """Quién paga la cuenta: el propio paciente o un tercero con el que la IPS tiene convenio."""
+
+    PARTICULAR = "PARTICULAR"
+    EPS = "EPS"
+    ARL = "ARL"
+    SOAT = "SOAT"
+    PREPAGADA = "PREPAGADA"
+
+
+class TipoServicio(str, Enum):
+    """Clase de servicio del catálogo; decide en qué grupo del RIPS se reporta."""
+
+    CONSULTA = "CONSULTA"
+    PROCEDIMIENTO = "PROCEDIMIENTO"
+    OTRO_SERVICIO = "OTRO_SERVICIO"
+
+
+class OrigenPago(str, Enum):
+    PACIENTE = "PACIENTE"
+    PAGADOR = "PAGADOR"
+
+
+class ConceptoGlosa(str, Enum):
+    """Conceptos generales de glosa (inspirados en el manual único de glosas)."""
+
+    FACTURACION = "FACTURACION"
+    TARIFAS = "TARIFAS"
+    SOPORTES = "SOPORTES"
+    AUTORIZACION = "AUTORIZACION"
+    COBERTURA = "COBERTURA"
+    PERTINENCIA = "PERTINENCIA"
+
+
+class EstadoGlosa(str, Enum):
+    ABIERTA = "ABIERTA"  # el pagador la formuló y la IPS aún no responde
+    RESPONDIDA = "RESPONDIDA"  # la IPS respondió; falta la decisión del pagador
+    ACEPTADA = "ACEPTADA"  # la IPS la acepta: ese valor no se cobra
+    LEVANTADA = "LEVANTADA"  # el pagador la retira: el valor vuelve a ser cobrable
+
+
 @dataclass
 class Entidad:
     """Base de todas las entidades persistentes.
@@ -173,11 +214,44 @@ class Recordatorio(Entidad):
 
 @dataclass
 class Procedimiento(Entidad):
-    """Servicio del catálogo con su tarifa vigente (en pesos colombianos, sin decimales)."""
+    """Servicio del catálogo con su tarifa base (en pesos colombianos, sin decimales).
+
+    `cups` es el código de la Clasificación Única de Procedimientos en Salud; el
+    RIPS lo exige, por eso el catálogo puede guardarlo.
+    """
 
     codigo: str = ""
     nombre: str = ""
     tarifa: int = 0
+    cups: str = ""
+    tipo_servicio: TipoServicio = TipoServicio.PROCEDIMIENTO
+
+
+@dataclass
+class Pagador(Entidad):
+    """Entidad que responde por la cuenta: el paciente (particular) o una EPS, ARL, etc."""
+
+    codigo: str = ""
+    nombre: str = ""
+    tipo: TipoPagador = TipoPagador.EPS
+    nit: str = ""
+
+
+@dataclass
+class Convenio(Entidad):
+    """Condiciones pactadas con un pagador (RF-19).
+
+    `porcentaje_tarifa` ajusta la tarifa base (100 = tarifa completa, 90 = 10 % menos).
+    El paciente asume `copago_porcentaje` % de la cuenta más la `cuota_moderadora`
+    fija; el resto lo debe el pagador. Para el particular el copago es 100 %.
+    """
+
+    pagador_id: int = 0
+    nombre: str = ""
+    porcentaje_tarifa: int = 100
+    copago_porcentaje: int = 0
+    cuota_moderadora: int = 0
+    requiere_autorizacion: bool = False
 
 
 @dataclass
@@ -193,6 +267,9 @@ class Ingreso(Entidad):
     fecha_egreso: Optional[datetime] = None
     resumen_egreso: str = ""
     admitido_por_id: int = 0
+    convenio_id: Optional[int] = None
+    numero_autorizacion: str = ""
+    diagnostico_principal: str = ""  # código CIE-10, lo registra el médico tratante
 
 
 @dataclass
@@ -200,8 +277,9 @@ class ProcedimientoRealizado(Entidad):
     """Procedimiento hecho al paciente durante un ingreso (RF-16).
 
     Forma parte de la historia clínica y a la vez es el cargo que se factura. El
-    código, el nombre y el valor se copian del catálogo al registrarlo (RN-10): un
-    cambio posterior de tarifa no altera lo ya realizado.
+    código, el nombre, el CUPS y el valor se copian del catálogo al registrarlo
+    (RN-10): un cambio posterior de tarifa no altera lo ya realizado. El valor ya
+    incluye el ajuste del convenio del ingreso (RN-14).
     """
 
     ingreso_id: int = 0
@@ -210,6 +288,8 @@ class ProcedimientoRealizado(Entidad):
     procedimiento_id: int = 0
     codigo: str = ""
     nombre: str = ""
+    cups: str = ""
+    tipo_servicio: TipoServicio = TipoServicio.PROCEDIMIENTO
     cantidad: int = 1
     valor_unitario: int = 0
     fecha_hora: Optional[datetime] = None
@@ -237,6 +317,34 @@ class LineaFactura:
 
 
 @dataclass
+class PagoFactura:
+    """Dinero recibido por una factura, del paciente (copago) o del pagador (abono)."""
+
+    origen: OrigenPago
+    metodo: MetodoPago
+    valor: int
+    fecha: datetime
+    referencia: str = ""
+    registrado_por_id: int = 0
+
+
+@dataclass
+class Glosa:
+    """Objeción del pagador a una parte de la factura (RF-21)."""
+
+    id: int
+    concepto: ConceptoGlosa
+    motivo: str
+    valor: int
+    fecha: datetime
+    estado: EstadoGlosa = EstadoGlosa.ABIERTA
+    respuesta: str = ""
+    fecha_respuesta: Optional[datetime] = None
+    nota_resolucion: str = ""
+    fecha_resolucion: Optional[datetime] = None
+
+
+@dataclass
 class Factura(Entidad):
     ingreso_id: int = 0
     paciente_id: int = 0
@@ -247,6 +355,18 @@ class Factura(Entidad):
     metodo_pago: Optional[MetodoPago] = None
     fecha_pago: Optional[datetime] = None
     motivo_anulacion: str = ""
+    # Copia del convenio al emitir (RN-14): cambiarlo después no altera lo ya facturado.
+    pagador_id: Optional[int] = None
+    pagador_codigo: str = ""
+    pagador_nombre: str = ""
+    convenio_id: Optional[int] = None
+    convenio_nombre: str = ""
+    valor_paciente: int = 0  # lo que debe pagar el paciente (copago y cuota moderadora)
+    valor_pagador: int = 0  # lo que debe pagar la EPS u otro pagador
+    fecha_radicacion: Optional[datetime] = None
+    numero_radicacion: str = ""
+    pagos: list[PagoFactura] = field(default_factory=list)
+    glosas: list[Glosa] = field(default_factory=list)
 
     @property
     def numero(self) -> str:
@@ -255,3 +375,35 @@ class Factura(Entidad):
     @property
     def total(self) -> int:
         return sum(linea.subtotal for linea in self.lineas)
+
+    @property
+    def radicada(self) -> bool:
+        return self.fecha_radicacion is not None
+
+    def pagado(self, origen: OrigenPago) -> int:
+        return sum(p.valor for p in self.pagos if p.origen == origen)
+
+    @property
+    def glosado_aceptado(self) -> int:
+        return sum(g.valor for g in self.glosas if g.estado == EstadoGlosa.ACEPTADA)
+
+    @property
+    def glosa_en_disputa(self) -> int:
+        return sum(g.valor for g in self.glosas if g.estado in (EstadoGlosa.ABIERTA, EstadoGlosa.RESPONDIDA))
+
+    @property
+    def saldo_paciente(self) -> int:
+        return self.valor_paciente - self.pagado(OrigenPago.PACIENTE)
+
+    @property
+    def saldo_pagador(self) -> int:
+        """Lo que el pagador aún debe, sin contar lo que la IPS aceptó perder por glosas."""
+        return self.valor_pagador - self.pagado(OrigenPago.PAGADOR) - self.glosado_aceptado
+
+    @property
+    def saldo(self) -> int:
+        return self.saldo_paciente + self.saldo_pagador
+
+    def saldada(self) -> bool:
+        """Sin saldos y sin glosas en disputa: la factura queda cerrada."""
+        return self.saldo == 0 and self.glosa_en_disputa == 0
