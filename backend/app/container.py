@@ -16,6 +16,7 @@ from app.repositories.interfaces import (
     IConvenioRepository,
     IFacturaRepository,
     IIngresoRepository,
+    IOrdenRepository,
     IPacienteRepository,
     IPagadorRepository,
     IProcedimientoRealizadoRepository,
@@ -30,6 +31,7 @@ from app.repositories.memoria import (
     MemoryConvenioRepository,
     MemoryFacturaRepository,
     MemoryIngresoRepository,
+    MemoryOrdenRepository,
     MemoryPacienteRepository,
     MemoryPagadorRepository,
     MemoryProcedimientoRealizadoRepository,
@@ -42,11 +44,13 @@ from app.services.autenticacion import AutenticacionService
 from app.services.catalogo import CatalogoService
 from app.services.cartera import CarteraService
 from app.services.cita import CitaService
+from app.services.cie10 import Cie10Service
 from app.services.consulta import ConsultaService
 from app.services.convenios import ConvenioService
 from app.services.facturacion import FacturacionService
 from app.services.ingreso import IngresoService
 from app.services.notificaciones import NotificacionService, NotificadorSimulado
+from app.services.ordenes import OrdenService
 from app.services.paciente import PacienteService
 from app.services.rips import RipsService
 from app.services.usuario import UsuarioService
@@ -68,6 +72,7 @@ class Contenedor:
     repo_facturas: IFacturaRepository
     repo_pagadores: IPagadorRepository
     repo_convenios: IConvenioRepository
+    repo_ordenes: IOrdenRepository
     # Servicios
     notificador: NotificadorSimulado
     notificaciones: NotificacionService
@@ -83,6 +88,8 @@ class Contenedor:
     convenios: ConvenioService
     cartera: CarteraService
     rips: RipsService
+    ordenes: OrdenService
+    cie10: Cie10Service
 
 
 def crear_contenedor(config: Configuracion) -> Contenedor:
@@ -98,12 +105,16 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
     repo_facturas = MemoryFacturaRepository(repo_auditoria)
     repo_pagadores = MemoryPagadorRepository()
     repo_convenios = MemoryConvenioRepository()
+    repo_ordenes = MemoryOrdenRepository(repo_auditoria)
 
     notificador = NotificadorSimulado()
     notificaciones = NotificacionService(repo_recordatorios, notificador, config)
     catalogo = CatalogoService(repo_procedimientos)
     convenios = ConvenioService(repo_pagadores, repo_convenios)
     convenios.asegurar_particular()  # siempre existe el pagador particular
+    ingresos = IngresoService(
+        repo_ingresos, repo_realizados, catalogo, repo_pacientes, repo_usuarios, config, convenios, repo_ordenes
+    )
     facturacion = FacturacionService(repo_facturas, repo_realizados, repo_ingresos, config, convenios)
 
     return Contenedor(
@@ -120,6 +131,7 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
         repo_facturas=repo_facturas,
         repo_pagadores=repo_pagadores,
         repo_convenios=repo_convenios,
+        repo_ordenes=repo_ordenes,
         notificador=notificador,
         notificaciones=notificaciones,
         autenticacion=AutenticacionService(repo_usuarios, repo_auditoria, config),
@@ -129,13 +141,13 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
         consultas=ConsultaService(repo_consultas, repo_citas, repo_pacientes, config),
         auditoria=AuditoriaService(repo_auditoria),
         catalogo=catalogo,
-        ingresos=IngresoService(
-            repo_ingresos, repo_realizados, catalogo, repo_pacientes, repo_usuarios, config, convenios
-        ),
+        ingresos=ingresos,
         facturacion=facturacion,
         convenios=convenios,
         cartera=CarteraService(facturacion, repo_facturas, config),
         rips=RipsService(
             repo_facturas, repo_ingresos, repo_realizados, repo_pacientes, repo_auditoria, config
         ),
+        ordenes=OrdenService(repo_ordenes, ingresos, catalogo, repo_auditoria, config),
+        cie10=Cie10Service(),
     )
