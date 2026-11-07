@@ -8,6 +8,8 @@ Prototipo de un sistema web para centralizar y proteger la información de pacie
 - **Frontend:** JavaScript puro (módulos ES), sin paso de compilación. FastAPI lo sirve en la raíz (`/`).
 - **Módulo de ingresos y facturación (estilo "mini salud facil"):** lista de todos los pacientes, ingreso del paciente, procedimientos realizados que quedan en su historia clínica y facturación por procedimiento.
 - **Módulo de IPS:** pagadores y convenios (EPS, ARL, SOAT) con tarifa pactada, copago, cuota moderadora y autorización; cartera con radicación, abonos, glosas y antigüedad; borrador de RIPS con validación de datos.
+- **Órdenes y resultados:** el médico solicita exámenes (laboratorio, imagenología, ECG) con diagnóstico CIE-10; apoyo diagnóstico registra los resultados con valores de referencia y el servicio se carga a la cuenta.
+- **Facturación electrónica y caja:** factura electrónica y notas crédito con CUFE/CUDE, XML UBL 2.1 simplificado y estado por documento (proveedor tecnológico **simulado**); recibos de caja con consecutivo, apertura y cierre de caja con diferencia y facturación a terceros (la EPS como adquirente).
 - **Patrón principal:** Repository. Los datos viven en **listas de objetos en memoria**, accedidas solo a través de interfaces de repositorio.
 
 > Prototipo académico. Los pacientes y usuarios de demostración son ficticios. Los datos se pierden al reiniciar el servidor.
@@ -41,15 +43,18 @@ La contraseña de todos es `Salud2026*`.
 
 | Usuario | Rol | Qué puede hacer |
 |---|---|---|
-| `recepcion1`, `recepcion2` | Recepción | Listar y registrar pacientes, agendar citas, **ingresar pacientes con su convenio, facturar, cobrar el copago, radicar facturas y gestionar abonos y glosas**. No ve información clínica. |
+| `recepcion1`, `recepcion2` | Recepción | Listar y registrar pacientes, agendar citas, **ingresar pacientes con su convenio, abrir caja, facturar, cobrar el copago, emitir la factura electrónica y notas crédito, radicar facturas y gestionar abonos y glosas**. No ve información clínica. |
 | `dr.perez`, `dra.gomez`, `dr.rojas`, `dra.torres` | Médico | Ver su agenda, atender citas, registrar y cerrar consultas, agregar notas aclaratorias, ver historias clínicas, **registrar procedimientos y el diagnóstico CIE-10 de sus pacientes ingresados y dar el egreso**. |
-| `admin` | Administrador | Crear y desactivar usuarios, consultar la bitácora de auditoría, ver y procesar recordatorios, gestionar el catálogo (con CUPS), **pagadores y convenios**, **cartera y glosas**, generar el **borrador de RIPS**, consultar facturas. |
+| `lab1` | Apoyo diagnóstico | Ver la cola de órdenes de laboratorio, imagenología y diagnóstico, y registrar sus resultados. No ve la historia clínica completa. |
+| `admin` | Administrador | Crear y desactivar usuarios, consultar la bitácora de auditoría, ver y procesar recordatorios, gestionar el catálogo (con CUPS), **pagadores y convenios**, **cartera y glosas**, generar el **borrador de RIPS**, consultar facturas, **documentos electrónicos y turnos de caja**. |
 
 Una prueba rápida de citas: entre como `recepcion1`, vaya al día siguiente y agende una cita; luego entre como `dr.perez`, abra su agenda del día siguiente y atienda esa cita.
 
 Prueba rápida de ingresos y facturación: como `recepcion1` abra *Pacientes*, elija uno y pulse *Ingresar paciente* (médico `Dr. Andrés Pérez`); salga y entre como `dr.perez`, abra *Ingresos* → *Abrir cuenta* y use *Registrar procedimiento* varias veces; vuelva como `recepcion1`, abra la cuenta del ingreso, pulse *Facturar pendientes*, genere la factura y *Registre el pago*.
 
 Prueba rápida de convenios y cartera: como `recepcion1` ingrese un paciente con el convenio *EPS Demo B · Subsidiado* (pide número de autorización); como `dr.perez` registre procedimientos y un diagnóstico (por ejemplo `R074`); como `recepcion1` facture, cobre el copago al paciente, *Radique al pagador*, registre un abono y una glosa y respóndala; en *Cartera y glosas* vea la antigüedad. Como `admin`, abra *RIPS*, genere el borrador del mes y descárguelo en JSON.
+
+Prueba rápida de órdenes y facturación electrónica: como `dr.perez` abra la cuenta de un ingreso, registre el diagnóstico buscando en el catálogo CIE-10 y use *Nueva orden*; entre como `lab1` y *Registre el resultado*; como `recepcion1` abra *Caja*, facture, *Emita la factura electrónica*, cobre el copago (sale un recibo `RC-…`), radique, registre y acepte una glosa y emita su nota crédito; cierre la caja contando el efectivo.
 
 ### Reglas del módulo de IPS
 
@@ -61,8 +66,15 @@ Prueba rápida de convenios y cartera: como `recepcion1` ingrese un paciente con
 | RN-17 | Una factura con pagos recibidos o ya radicada no se puede anular. |
 | RN-18 | El pagador solo abona sobre facturas radicadas y hasta su saldo libre de glosas en disputa. |
 | RN-19 | Solo se glosan facturas radicadas; la glosa pasa de abierta a respondida y termina aceptada o levantada. |
+| RN-20 | No se da el egreso mientras haya órdenes solicitadas sin resultado. |
+| RN-21 | Al registrar un resultado, el servicio se carga a la cuenta con el precio del convenio. |
+| RN-22 | Sin factura electrónica aceptada no se radica una factura al pagador. |
+| RN-23 | Una factura con factura electrónica aceptada se anula con una nota crédito; una glosa aceptada tiene una sola nota crédito. |
+| RN-24 | Cada cajero tiene como máximo una caja abierta. |
+| RN-25 | Cobrar al paciente exige una caja abierta; cada pago recibido genera un recibo con consecutivo. |
+| RN-26 | Al cerrar la caja, el efectivo contado se compara con base + cobros en efectivo; una diferencia exige observaciones. |
 
-Endpoints nuevos: `/api/pagadores`, `/api/convenios`, `/api/cartera`, `/api/rips`, `/api/facturas/{id}/radicar`, `/pagos-pagador`, `/glosas` e `/api/ingresos/{id}/diagnostico`. Los valores son pesos colombianos enteros.
+Endpoints nuevos: `/api/pagadores`, `/api/convenios`, `/api/cartera`, `/api/rips`, `/api/facturas/{id}/radicar`, `/pagos-pagador`, `/glosas`, `/api/ingresos/{id}/diagnostico`, `/api/ordenes`, `/api/cie10`, `/api/electronica/...` (emitir, reintentar, notas crédito, descarga del XML) y `/api/caja/...` (apertura, cierre, turnos). Los valores son pesos colombianos enteros.
 
 ### Pruebas automáticas
 
@@ -72,11 +84,11 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Son 116 pruebas: contrato de los repositorios, reglas de negocio (documento único, cruce de citas, consulta cerrada, un ingreso abierto por paciente, valor congelado, factura única por procedimiento, tarifas y copagos por convenio, radicación, abonos, glosas, RIPS), permisos por rol, sesiones y bitácora.
+Son 155 pruebas: contrato de los repositorios, reglas de negocio (documento único, cruce de citas, consulta cerrada, un ingreso abierto por paciente, valor congelado, factura única por procedimiento, tarifas y copagos por convenio, radicación, abonos, glosas, RIPS, órdenes y resultados, CUFE y XML, rechazos y reintentos, notas crédito, recibos y caja), permisos por rol, sesiones y bitácora.
 
 ### Configuración
 
-Variables de entorno opcionales (ver `.env.example`): `SECRET_KEY`, `TZ_CONSULTORIO`, `JORNADA_INICIO`, `JORNADA_FIN`, `DURACION_CITA_MIN`, `TOKEN_MINUTOS`, `RECORDATORIO_HORAS`, `SEMBRAR_DATOS_DEMO`, `RECORDATORIOS_AUTOMATICOS`, `IPS_NOMBRE`, `IPS_NIT`, `IPS_CODIGO_HABILITACION` (datos del prestador que salen en el RIPS). Defina `SECRET_KEY` en cualquier despliegue real; si no, se genera una al arrancar y las sesiones se pierden al reiniciar.
+Variables de entorno opcionales (ver `.env.example`): `SECRET_KEY`, `TZ_CONSULTORIO`, `JORNADA_INICIO`, `JORNADA_FIN`, `DURACION_CITA_MIN`, `TOKEN_MINUTOS`, `RECORDATORIO_HORAS`, `SEMBRAR_DATOS_DEMO`, `RECORDATORIOS_AUTOMATICOS`, `IPS_NOMBRE`, `IPS_NIT`, `IPS_CODIGO_HABILITACION` (datos del prestador que salen en el RIPS y la factura electrónica), `DIAN_AMBIENTE`, `DIAN_PREFIJO`, `DIAN_RESOLUCION`, `DIAN_RANGO_DESDE`, `DIAN_RANGO_HASTA`, `DIAN_CLAVE_TECNICA`, `DIAN_PIN_SOFTWARE`, `DIAN_OBLIGATORIA` y `CAJA_OBLIGATORIA`. Defina `SECRET_KEY` en cualquier despliegue real; si no, se genera una al arrancar y las sesiones se pierden al reiniciar.
 
 ## Arquitectura
 
@@ -117,14 +129,16 @@ Los servicios dependen de interfaces (`IPacienteRepository`, `ICitaRepository`�
 
 ## Alcance del prototipo
 
-Implementado: registro, listado completo, búsqueda y actualización de pacientes; ingreso (admisión) y egreso; procedimientos realizados con catálogo y tarifas, que quedan en la historia clínica; facturación por procedimiento con pago y anulación; pagadores y convenios; cartera con radicación, abonos, glosas y antigüedad; borrador de RIPS; agenda con horarios libres, cruce de citas, reprogramación y cancelación; consultas médicas con cierre y notas aclaratorias; historia clínica; usuarios y roles; bitácora de auditoría; recordatorios simulados.
+Implementado: registro, listado completo, búsqueda y actualización de pacientes; ingreso (admisión) y egreso; procedimientos realizados con catálogo y tarifas, que quedan en la historia clínica; facturación por procedimiento con pago y anulación; pagadores y convenios; cartera con radicación, abonos, glosas y antigüedad; borrador de RIPS; órdenes y resultados de apoyo diagnóstico con catálogo CIE-10; factura electrónica y notas crédito simuladas; recibos y cierre de caja; agenda con horarios libres, cruce de citas, reprogramación y cancelación; consultas médicas con cierre y notas aclaratorias; historia clínica; usuarios y roles; bitácora de auditoría; recordatorios simulados.
 
 No implementado (queda como trabajo futuro):
 
 - **RF-09, adjuntar documentos** a la historia clínica.
 - **RF-14, reportes** de gestión.
-- **Facturación electrónica ante la DIAN**, validación oficial del RIPS ante el Ministerio de Salud y catálogo completo CIE-10/CUPS (los CUPS de la demostración son ejemplos).
-- Hospitalización con camas, órdenes y resultados de laboratorio, inventario y nómina.
+- **Transmisión real a la DIAN:** la facturación electrónica usa un proveedor tecnológico **simulado**. Calcula el CUFE/CUDE (SHA-384) y genera un XML UBL 2.1 simplificado, pero no lo firma (XAdES), no usa certificado digital ni resolución de numeración reales, y su respuesta no tiene validez tributaria. Para producción se escribe un adaptador de `IProveedorTecnologico` con un proveedor autorizado.
+- Validación oficial del RIPS ante el Ministerio de Salud; el RIPS es un borrador.
+- Catálogos completos: el CIE-10 es una muestra de 149 códigos y los CUPS de la demostración son ejemplos.
+- Hospitalización con camas, inventario y nómina.
 - Persistencia real: al reiniciar, los datos vuelven a los de demostración.
 - Un solo proceso: con varios procesos cada uno tendría sus propios datos en memoria.
 - Envío real de correos o mensajes.
