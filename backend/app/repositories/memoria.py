@@ -21,6 +21,7 @@ from app.domain.excepciones import NoEncontrado
 from app.domain.modelos import (
     Cita,
     Consulta,
+    Convenio,
     Entidad,
     EstadoCita,
     EstadoFactura,
@@ -29,6 +30,7 @@ from app.domain.modelos import (
     Factura,
     Ingreso,
     NotaAclaratoria,
+    Pagador,
     Paciente,
     Procedimiento,
     ProcedimientoRealizado,
@@ -40,9 +42,11 @@ from app.repositories.interfaces import (
     IAuditoriaRepository,
     ICitaRepository,
     IConsultaRepository,
+    IConvenioRepository,
     IFacturaRepository,
     IIngresoRepository,
     IPacienteRepository,
+    IPagadorRepository,
     IProcedimientoRealizadoRepository,
     IProcedimientoRepository,
     IRecordatorioRepository,
@@ -367,6 +371,26 @@ class MemoryProcedimientoRepository(MemoryRepository[Procedimiento], IProcedimie
                 if item.activo and item.codigo.upper() == buscado:
                     return copy.deepcopy(item)
         return None
+
+
+class MemoryPagadorRepository(MemoryRepository[Pagador], IPagadorRepository):
+    def obtener_por_codigo(self, codigo: str) -> Optional[Pagador]:
+        buscado = codigo.strip().upper()
+        with self._lock:
+            for item in self._items:
+                if item.activo and item.codigo.upper() == buscado:
+                    return copy.deepcopy(item)
+        return None
+
+
+class MemoryConvenioRepository(MemoryRepository[Convenio], IConvenioRepository):
+    def obtener_por_pagador(self, pagador_id: int, incluir_inactivos: bool = False) -> list[Convenio]:
+        with self._lock:
+            return [
+                copy.deepcopy(c)
+                for c in self._items
+                if c.pagador_id == pagador_id and (incluir_inactivos or c.activo)
+            ]
 
 
 class MemoryIngresoRepository(MemoryRepository[Ingreso], IIngresoRepository):
