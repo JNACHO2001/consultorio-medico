@@ -11,6 +11,7 @@ Prototipo de un sistema web para centralizar y proteger la información de pacie
 - **Órdenes y resultados:** el médico solicita exámenes (laboratorio, imagenología, ECG) con diagnóstico CIE-10; apoyo diagnóstico registra los resultados con valores de referencia y el servicio se carga a la cuenta.
 - **Facturación electrónica y caja:** factura electrónica y notas crédito con CUFE/CUDE, XML UBL 2.1 simplificado y estado por documento (proveedor tecnológico **simulado**); recibos de caja con consecutivo, apertura y cierre de caja con diferencia y facturación a terceros (la EPS como adquirente).
 - **Patrón principal:** Repository. Los datos viven en **listas de objetos en memoria**, accedidas solo a través de interfaces de repositorio.
+- **Facturación electrónica distribuida (Unidad 2):** el proveedor tecnológico puede correr como **nodos independientes** (procesos con pool de hilos) detrás de un **proxy** con mediador, circuit breaker, reintentos y observadores. Ver [Arquitectura distribuida](#arquitectura-distribuida-unidad-2).
 
 > Prototipo académico. Los pacientes y usuarios de demostración son ficticios. Los datos se pierden al reiniciar el servidor.
 
@@ -113,7 +114,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Son 155 pruebas: contrato de los repositorios, reglas de negocio (documento único, cruce de citas, consulta cerrada, un ingreso abierto por paciente, valor congelado, factura única por procedimiento, tarifas y copagos por convenio, radicación, abonos, glosas, RIPS, órdenes y resultados, CUFE y XML, rechazos y reintentos, notas crédito, recibos y caja), permisos por rol, sesiones y bitácora.
+Son 181 pruebas (155 del sistema y 26 del módulo distribuido en `tests/test_distribuido.py`): contrato de los repositorios, reglas de negocio (documento único, cruce de citas, consulta cerrada, un ingreso abierto por paciente, valor congelado, factura única por procedimiento, tarifas y copagos por convenio, radicación, abonos, glosas, RIPS, órdenes y resultados, CUFE y XML, rechazos y reintentos, notas crédito, recibos y caja), permisos por rol, sesiones y bitácora; y, en el módulo distribuido, protocolo, pool de hilos, contrapresión, idempotencia, balanceo, caída y recuperación de nodos, tiempos de espera, observadores y emisión concurrente.
 
 ### Configuración
 
@@ -156,6 +157,32 @@ Los servicios dependen de interfaces (`IPacienteRepository`, `ICitaRepository`�
 - **Notificador simulado:** los recordatorios se programan 24 horas antes de cada cita y un proceso en segundo plano los "envía" (no sale ningún correo real).
 - **Seguridad:** contraseñas con PBKDF2-SHA256, sesiones con JWT que vencen y se pueden revocar al cerrar sesión, respuestas de la API con `Cache-Control: no-store`, todo el texto del frontend se inserta sin `innerHTML`.
 
+## Arquitectura distribuida (Unidad 2)
+
+La facturación electrónica se puede ejecutar de forma distribuida: la API deja de validar el documento en su propio proceso y lo envía por TCP a **N nodos proveedor**, cada uno con su **pool de hilos**. El servicio de facturación no cambia: el proxy implementa la misma interfaz `IProveedorTecnologico`.
+
+| Pieza | Archivo | Patrón / idea |
+|---|---|---|
+| `ProveedorProxy` | `backend/app/distribuido/proxy.py` | **Proxy**: reintentos con espera exponencial, clave de idempotencia, degradación a «Reintentar» si no hay nodos |
+| `MediadorNodos` | `backend/app/distribuido/mediador.py` | **Mediator**: elige el nodo con menos carga; **circuit breaker** por nodo (CERRADO, ABIERTO, SEMIABIERTO) |
+| `BusEventos` y `Metricas` | `backend/app/distribuido/eventos.py` | **Observer**: eventos asíncronos en un hilo propio; percentiles p50/p95/p99 |
+| `NodoProveedor` | `backend/app/distribuido/nodo.py` | Servidor TCP, **pool de hilos**, cola acotada con contrapresión (`OCUPADO`), caché de idempotencia |
+| `ClusterProveedor`, `ClusterLocal` | `backend/app/distribuido/cluster.py` | Composición del lado de la API y lanzador de nodos como procesos |
+
+Cómo probarlo con tres nodos:
+
+```bash
+cd backend
+python -m app.distribuido.cluster --nodos 3        # imprime NODOS_PROVEEDOR=127.0.0.1:...,...
+NODOS_PROVEEDOR=127.0.0.1:PUERTO1,127.0.0.1:PUERTO2,127.0.0.1:PUERTO3 uvicorn app.main:crear_app --factory
+```
+
+Con `NODOS_PROVEEDOR` definido, `GET /api/electronica/nodos` (administrador) muestra el circuito, la carga y las métricas de cada nodo, y `/health` informa cuántos nodos están disponibles. Sin la variable el sistema funciona como antes (proveedor simulado local), que es lo que usa el despliegue en Render.
+
+Evaluación: `python backend/benchmarks/benchmark_distribuido.py` mide escalabilidad horizontal y vertical, saturación, caída de un nodo y el servicio completo; los resultados quedan en `backend/benchmarks/resultados/` y las gráficas se generan con `python backend/benchmarks/graficas.py`. Diagramas UML (componentes, secuencia y despliegue) en `docs/uml/` y su generador `docs/uml/render_distribuido.py`.
+
+**Ajuste de rendimiento medido:** el servicio de facturación electrónica mantenía su candado mientras esperaba al proveedor, así que agregar nodos no aceleraba nada (22,4 contra 22,9 facturas/s con 1 y 4 nodos). Ahora el candado solo cubre la reserva del consecutivo y el envío va fuera de él (96,7 y 271,7 facturas/s).
+
 ## Alcance del prototipo
 
 Implementado: registro, listado completo, búsqueda y actualización de pacientes; ingreso (admisión) y egreso; procedimientos realizados con catálogo y tarifas, que quedan en la historia clínica; facturación por procedimiento con pago y anulación; pagadores y convenios; cartera con radicación, abonos, glosas y antigüedad; borrador de RIPS; órdenes y resultados de apoyo diagnóstico con catálogo CIE-10; factura electrónica y notas crédito simuladas; recibos y cierre de caja; agenda con horarios libres, cruce de citas, reprogramación y cancelación; consultas médicas con cierre y notas aclaratorias; historia clínica; usuarios y roles; bitácora de auditoría; recordatorios simulados.
@@ -169,7 +196,7 @@ No implementado (queda como trabajo futuro):
 - Catálogos completos: el CIE-10 es una muestra de 149 códigos y los CUPS de la demostración son ejemplos.
 - Hospitalización con camas, inventario y nómina.
 - Persistencia real: al reiniciar, los datos vuelven a los de demostración.
-- Un solo proceso: con varios procesos cada uno tendría sus propios datos en memoria.
+- Un solo proceso de API: con varios procesos de API cada uno tendría sus propios datos en memoria (los nodos proveedor sí son procesos separados y no guardan datos del consultorio).
 - Envío real de correos o mensajes.
 
 ## Estructura del repositorio
@@ -183,10 +210,12 @@ No implementado (queda como trabajo futuro):
 │   │   ├── domain/         entidades y excepciones
 │   │   ├── repositories/   interfaces y implementaciones en memoria
 │   │   ├── services/       lógica de negocio
+│   │   ├── distribuido/    nodos, proxy, mediador y observadores (Unidad 2)
 │   │   ├── config.py       configuración por variables de entorno
 │   │   ├── container.py    composición de dependencias
 │   │   ├── main.py         aplicación FastAPI
 │   │   └── seed.py         datos de demostración
+│   ├── benchmarks/         evaluación de escalabilidad y robustez (Unidad 2)
 │   ├── tests/              pruebas con pytest
 │   └── requirements*.txt
 ├── frontend/               HTML, CSS y JavaScript (módulos ES)
