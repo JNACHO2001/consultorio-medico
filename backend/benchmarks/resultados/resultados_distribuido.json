@@ -1,0 +1,1126 @@
+{
+  "entorno": {
+    "fecha": "2026-11-11T16:05:27",
+    "nucleos": 2,
+    "python": "3.13.18",
+    "latencia_simulada_ms": 40.0
+  },
+  "e5_servicio_antes": {
+    "concurrencia": 16,
+    "filas": [
+      {
+        "nodos": 1,
+        "documentos": 95,
+        "aceptados": 95,
+        "tasa_exito_pct": 100.0,
+        "duracion_s": 4.242,
+        "docs_por_s": 22.4,
+        "p50_ms": 697.0,
+        "p95_ms": 756.2,
+        "p99_ms": 763.2,
+        "max_ms": 769.9,
+        "consecutivos_unicos": true
+      },
+      {
+        "nodos": 4,
+        "documentos": 95,
+        "aceptados": 95,
+        "tasa_exito_pct": 100.0,
+        "duracion_s": 4.145,
+        "docs_por_s": 22.9,
+        "p50_ms": 696.5,
+        "p95_ms": 744.5,
+        "p99_ms": 747.5,
+        "max_ms": 749.2,
+        "consecutivos_unicos": true
+      }
+    ]
+  },
+  "e5_servicio_despues": {
+    "concurrencia": 16,
+    "filas": [
+      {
+        "nodos": 1,
+        "documentos": 95,
+        "aceptados": 95,
+        "tasa_exito_pct": 100.0,
+        "duracion_s": 0.983,
+        "docs_por_s": 96.7,
+        "p50_ms": 158.7,
+        "p95_ms": 176.6,
+        "p99_ms": 180.1,
+        "max_ms": 183.5,
+        "consecutivos_unicos": true
+      },
+      {
+        "nodos": 4,
+        "documentos": 95,
+        "aceptados": 95,
+        "tasa_exito_pct": 100.0,
+        "duracion_s": 0.35,
+        "docs_por_s": 271.7,
+        "p50_ms": 50.7,
+        "p95_ms": 72.2,
+        "p99_ms": 87.8,
+        "max_ms": 90.2,
+        "consecutivos_unicos": true
+      }
+    ]
+  },
+  "e1_horizontal": {
+    "filas": [
+      {
+        "nodos": 1,
+        "hilos_por_nodo": 4,
+        "cola": 64,
+        "concurrencia": 64,
+        "docs_por_s_media": 98.8,
+        "docs_por_s_desv": 0.3,
+        "p50_ms": 643.4,
+        "p95_ms": 665.9,
+        "p99_ms": 673.2,
+        "tasa_exito_pct": 100.0,
+        "reintentos": 0,
+        "intentos_fallidos": {},
+        "por_nodo": {
+          "127.0.0.1:41403": 600
+        },
+        "corridas": [
+          {
+            "documentos": 600,
+            "aceptados": 600,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 6.078,
+            "docs_por_s": 98.7,
+            "p50_ms": 643.7,
+            "p95_ms": 664.7,
+            "p99_ms": 673.3,
+            "max_ms": 683.9,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:41403": 600
+            }
+          },
+          {
+            "documentos": 600,
+            "aceptados": 600,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 6.091,
+            "docs_por_s": 98.5,
+            "p50_ms": 646.5,
+            "p95_ms": 670.3,
+            "p99_ms": 676.3,
+            "max_ms": 682.7,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:41403": 600
+            }
+          },
+          {
+            "documentos": 600,
+            "aceptados": 600,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 6.048,
+            "docs_por_s": 99.2,
+            "p50_ms": 639.9,
+            "p95_ms": 662.6,
+            "p99_ms": 670.1,
+            "max_ms": 674.6,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:41403": 600
+            }
+          }
+        ],
+        "aceleracion": 1.0,
+        "eficiencia_pct": 100.0
+      },
+      {
+        "nodos": 2,
+        "hilos_por_nodo": 4,
+        "cola": 64,
+        "concurrencia": 64,
+        "docs_por_s_media": 195.5,
+        "docs_por_s_desv": 1.0,
+        "p50_ms": 322.9,
+        "p95_ms": 342.6,
+        "p99_ms": 348.8,
+        "tasa_exito_pct": 100.0,
+        "reintentos": 0,
+        "intentos_fallidos": {},
+        "por_nodo": {
+          "127.0.0.1:33205": 302,
+          "127.0.0.1:42635": 298
+        },
+        "corridas": [
+          {
+            "documentos": 600,
+            "aceptados": 600,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 3.078,
+            "docs_por_s": 195.0,
+            "p50_ms": 324.2,
+            "p95_ms": 343.6,
+            "p99_ms": 349.4,
+            "max_ms": 352.6,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:42635": 301,
+              "127.0.0.1:33205": 299
+            }
+          },
+          {
+            "documentos": 600,
+            "aceptados": 600,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 3.048,
+            "docs_por_s": 196.8,
+            "p50_ms": 320.9,
+            "p95_ms": 342.9,
+            "p99_ms": 348.9,
+            "max_ms": 354.0,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:33205": 300,
+              "127.0.0.1:42635": 300
+            }
+          },
+          {
+            "documentos": 600,
+            "aceptados": 600,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 3.083,
+            "docs_por_s": 194.6,
+            "p50_ms": 323.5,
+            "p95_ms": 341.4,
+            "p99_ms": 348.0,
+            "max_ms": 358.1,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:33205": 302,
+              "127.0.0.1:42635": 298
+            }
+          }
+        ],
+        "aceleracion": 1.98,
+        "eficiencia_pct": 99.0
+      },
+      {
+        "nodos": 4,
+        "hilos_por_nodo": 4,
+        "cola": 64,
+        "concurrencia": 64,
+        "docs_por_s_media": 392.6,
+        "docs_por_s_desv": 2.0,
+        "p50_ms": 158.6,
+        "p95_ms": 174.4,
+        "p99_ms": 179.7,
+        "tasa_exito_pct": 100.0,
+        "reintentos": 0,
+        "intentos_fallidos": {},
+        "por_nodo": {
+          "127.0.0.1:46715": 150,
+          "127.0.0.1:43923": 150,
+          "127.0.0.1:33113": 150,
+          "127.0.0.1:34373": 150
+        },
+        "corridas": [
+          {
+            "documentos": 600,
+            "aceptados": 600,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 1.517,
+            "docs_por_s": 395.4,
+            "p50_ms": 156.8,
+            "p95_ms": 173.0,
+            "p99_ms": 179.4,
+            "max_ms": 185.9,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:33113": 150,
+              "127.0.0.1:43923": 152,
+              "127.0.0.1:46715": 150,
+              "127.0.0.1:34373": 148
+            }
+          },
+          {
+            "documentos": 600,
+            "aceptados": 600,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 1.532,
+            "docs_por_s": 391.7,
+            "p50_ms": 160.2,
+            "p95_ms": 174.9,
+            "p99_ms": 179.1,
+            "max_ms": 194.5,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:33113": 149,
+              "127.0.0.1:34373": 149,
+              "127.0.0.1:43923": 151,
+              "127.0.0.1:46715": 151
+            }
+          },
+          {
+            "documentos": 600,
+            "aceptados": 600,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 1.535,
+            "docs_por_s": 390.8,
+            "p50_ms": 158.9,
+            "p95_ms": 175.3,
+            "p99_ms": 180.6,
+            "max_ms": 188.9,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:46715": 150,
+              "127.0.0.1:43923": 150,
+              "127.0.0.1:33113": 150,
+              "127.0.0.1:34373": 150
+            }
+          }
+        ],
+        "aceleracion": 3.97,
+        "eficiencia_pct": 99.2
+      }
+    ],
+    "capacidad_teorica_por_nodo": 100.0
+  },
+  "e2_vertical": {
+    "filas": [
+      {
+        "nodos": 1,
+        "hilos_por_nodo": 1,
+        "cola": 128,
+        "concurrencia": 64,
+        "docs_por_s_media": 24.6,
+        "docs_por_s_desv": 0.1,
+        "p50_ms": 2583.2,
+        "p95_ms": 2667.8,
+        "p99_ms": 2679.8,
+        "tasa_exito_pct": 100.0,
+        "reintentos": 0,
+        "intentos_fallidos": {},
+        "por_nodo": {
+          "127.0.0.1:39165": 400
+        },
+        "corridas": [
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 16.182,
+            "docs_por_s": 24.7,
+            "p50_ms": 2582.3,
+            "p95_ms": 2660.7,
+            "p99_ms": 2668.6,
+            "max_ms": 2675.3,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:39165": 400
+            }
+          },
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 16.227,
+            "docs_por_s": 24.7,
+            "p50_ms": 2586.2,
+            "p95_ms": 2665.7,
+            "p99_ms": 2674.4,
+            "max_ms": 2683.5,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:39165": 400
+            }
+          },
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 16.313,
+            "docs_por_s": 24.5,
+            "p50_ms": 2581.1,
+            "p95_ms": 2677.0,
+            "p99_ms": 2696.3,
+            "max_ms": 2705.2,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:39165": 400
+            }
+          }
+        ],
+        "capacidad_teorica": 25.0
+      },
+      {
+        "nodos": 1,
+        "hilos_por_nodo": 2,
+        "cola": 128,
+        "concurrencia": 64,
+        "docs_por_s_media": 49.5,
+        "docs_por_s_desv": 0.2,
+        "p50_ms": 1286.4,
+        "p95_ms": 1332.0,
+        "p99_ms": 1343.6,
+        "tasa_exito_pct": 100.0,
+        "reintentos": 0,
+        "intentos_fallidos": {},
+        "por_nodo": {
+          "127.0.0.1:44515": 400
+        },
+        "corridas": [
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 8.136,
+            "docs_por_s": 49.2,
+            "p50_ms": 1288.1,
+            "p95_ms": 1338.0,
+            "p99_ms": 1347.6,
+            "max_ms": 1356.5,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:44515": 400
+            }
+          },
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 8.098,
+            "docs_por_s": 49.4,
+            "p50_ms": 1288.9,
+            "p95_ms": 1334.6,
+            "p99_ms": 1343.1,
+            "max_ms": 1348.2,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:44515": 400
+            }
+          },
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 8.036,
+            "docs_por_s": 49.8,
+            "p50_ms": 1282.1,
+            "p95_ms": 1323.4,
+            "p99_ms": 1340.0,
+            "max_ms": 1352.8,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:44515": 400
+            }
+          }
+        ],
+        "capacidad_teorica": 50.0
+      },
+      {
+        "nodos": 1,
+        "hilos_por_nodo": 4,
+        "cola": 128,
+        "concurrencia": 64,
+        "docs_por_s_media": 98.1,
+        "docs_por_s_desv": 0.9,
+        "p50_ms": 646.0,
+        "p95_ms": 672.2,
+        "p99_ms": 681.0,
+        "tasa_exito_pct": 100.0,
+        "reintentos": 0,
+        "intentos_fallidos": {},
+        "por_nodo": {
+          "127.0.0.1:41979": 400
+        },
+        "corridas": [
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 4.079,
+            "docs_por_s": 98.1,
+            "p50_ms": 648.5,
+            "p95_ms": 668.2,
+            "p99_ms": 675.3,
+            "max_ms": 679.9,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:41979": 400
+            }
+          },
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 4.034,
+            "docs_por_s": 99.2,
+            "p50_ms": 637.2,
+            "p95_ms": 675.1,
+            "p99_ms": 684.9,
+            "max_ms": 693.2,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:41979": 400
+            }
+          },
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 4.121,
+            "docs_por_s": 97.1,
+            "p50_ms": 652.2,
+            "p95_ms": 673.2,
+            "p99_ms": 682.8,
+            "max_ms": 692.5,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:41979": 400
+            }
+          }
+        ],
+        "capacidad_teorica": 100.0
+      },
+      {
+        "nodos": 1,
+        "hilos_por_nodo": 8,
+        "cola": 128,
+        "concurrencia": 64,
+        "docs_por_s_media": 194.8,
+        "docs_por_s_desv": 1.1,
+        "p50_ms": 322.4,
+        "p95_ms": 338.2,
+        "p99_ms": 343.0,
+        "tasa_exito_pct": 100.0,
+        "reintentos": 0,
+        "intentos_fallidos": {},
+        "por_nodo": {
+          "127.0.0.1:38813": 400
+        },
+        "corridas": [
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 2.037,
+            "docs_por_s": 196.4,
+            "p50_ms": 320.5,
+            "p95_ms": 333.7,
+            "p99_ms": 337.6,
+            "max_ms": 340.6,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:38813": 400
+            }
+          },
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 2.065,
+            "docs_por_s": 193.7,
+            "p50_ms": 325.1,
+            "p95_ms": 342.0,
+            "p99_ms": 346.6,
+            "max_ms": 349.0,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:38813": 400
+            }
+          },
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 2.057,
+            "docs_por_s": 194.4,
+            "p50_ms": 321.7,
+            "p95_ms": 338.9,
+            "p99_ms": 344.9,
+            "max_ms": 347.4,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:38813": 400
+            }
+          }
+        ],
+        "capacidad_teorica": 200.0
+      },
+      {
+        "nodos": 1,
+        "hilos_por_nodo": 16,
+        "cola": 128,
+        "concurrencia": 64,
+        "docs_por_s_media": 384.3,
+        "docs_por_s_desv": 2.2,
+        "p50_ms": 159.7,
+        "p95_ms": 172.3,
+        "p99_ms": 176.5,
+        "tasa_exito_pct": 100.0,
+        "reintentos": 0,
+        "intentos_fallidos": {},
+        "por_nodo": {
+          "127.0.0.1:45893": 400
+        },
+        "corridas": [
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 1.034,
+            "docs_por_s": 387.0,
+            "p50_ms": 158.0,
+            "p95_ms": 169.3,
+            "p99_ms": 173.6,
+            "max_ms": 178.6,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:45893": 400
+            }
+          },
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 1.048,
+            "docs_por_s": 381.6,
+            "p50_ms": 160.8,
+            "p95_ms": 173.7,
+            "p99_ms": 177.1,
+            "max_ms": 181.7,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:45893": 400
+            }
+          },
+          {
+            "documentos": 400,
+            "aceptados": 400,
+            "tasa_exito_pct": 100.0,
+            "duracion_s": 1.041,
+            "docs_por_s": 384.4,
+            "p50_ms": 160.3,
+            "p95_ms": 174.0,
+            "p99_ms": 178.9,
+            "max_ms": 182.6,
+            "reintentos": 0,
+            "intentos_fallidos": {},
+            "por_nodo": {
+              "127.0.0.1:45893": 400
+            }
+          }
+        ],
+        "capacidad_teorica": 400.0
+      }
+    ]
+  },
+  "e3_saturacion": {
+    "cola_corta": {
+      "nodos": 2,
+      "hilos_por_nodo": 2,
+      "cola": 1,
+      "concurrencia": 64,
+      "docs_por_s_media": 216.7,
+      "docs_por_s_desv": 1.6,
+      "p50_ms": 299.0,
+      "p95_ms": 455.5,
+      "p99_ms": 489.7,
+      "tasa_exito_pct": 43.53,
+      "reintentos": 431,
+      "intentos_fallidos": {
+        "saturado": 946,
+        "sin_nodos": 327
+      },
+      "por_nodo": {
+        "127.0.0.1:44365": 108,
+        "127.0.0.1:35957": 107
+      },
+      "corridas": [
+        {
+          "documentos": 500,
+          "aceptados": 220,
+          "tasa_exito_pct": 44.0,
+          "duracion_s": 2.307,
+          "docs_por_s": 216.8,
+          "p50_ms": 296.0,
+          "p95_ms": 463.5,
+          "p99_ms": 494.8,
+          "max_ms": 509.5,
+          "reintentos": 150,
+          "intentos_fallidos": {
+            "saturado": 943,
+            "sin_nodos": 327
+          },
+          "por_nodo": {
+            "127.0.0.1:44365": 110,
+            "127.0.0.1:35957": 110
+          }
+        },
+        {
+          "documentos": 500,
+          "aceptados": 218,
+          "tasa_exito_pct": 43.6,
+          "duracion_s": 2.289,
+          "docs_por_s": 218.5,
+          "p50_ms": 298.5,
+          "p95_ms": 452.4,
+          "p99_ms": 495.9,
+          "max_ms": 571.0,
+          "reintentos": 148,
+          "intentos_fallidos": {
+            "saturado": 948,
+            "sin_nodos": 328
+          },
+          "por_nodo": {
+            "127.0.0.1:44365": 110,
+            "127.0.0.1:35957": 108
+          }
+        },
+        {
+          "documentos": 500,
+          "aceptados": 215,
+          "tasa_exito_pct": 43.0,
+          "duracion_s": 2.329,
+          "docs_por_s": 214.7,
+          "p50_ms": 302.4,
+          "p95_ms": 450.6,
+          "p99_ms": 478.5,
+          "max_ms": 591.8,
+          "reintentos": 133,
+          "intentos_fallidos": {
+            "saturado": 946,
+            "sin_nodos": 327
+          },
+          "por_nodo": {
+            "127.0.0.1:44365": 108,
+            "127.0.0.1:35957": 107
+          }
+        }
+      ]
+    },
+    "cola_ajustada": {
+      "nodos": 2,
+      "hilos_por_nodo": 2,
+      "cola": 32,
+      "concurrencia": 64,
+      "docs_por_s_media": 97.9,
+      "docs_por_s_desv": 0.2,
+      "p50_ms": 643.4,
+      "p95_ms": 677.0,
+      "p99_ms": 689.1,
+      "tasa_exito_pct": 100.0,
+      "reintentos": 0,
+      "intentos_fallidos": {},
+      "por_nodo": {
+        "127.0.0.1:42339": 250,
+        "127.0.0.1:45861": 250
+      },
+      "corridas": [
+        {
+          "documentos": 500,
+          "aceptados": 500,
+          "tasa_exito_pct": 100.0,
+          "duracion_s": 5.095,
+          "docs_por_s": 98.1,
+          "p50_ms": 641.0,
+          "p95_ms": 680.1,
+          "p99_ms": 692.3,
+          "max_ms": 703.8,
+          "reintentos": 0,
+          "intentos_fallidos": {},
+          "por_nodo": {
+            "127.0.0.1:45861": 251,
+            "127.0.0.1:42339": 249
+          }
+        },
+        {
+          "documentos": 500,
+          "aceptados": 500,
+          "tasa_exito_pct": 100.0,
+          "duracion_s": 5.097,
+          "docs_por_s": 98.1,
+          "p50_ms": 645.2,
+          "p95_ms": 672.9,
+          "p99_ms": 684.1,
+          "max_ms": 696.3,
+          "reintentos": 0,
+          "intentos_fallidos": {},
+          "por_nodo": {
+            "127.0.0.1:45861": 250,
+            "127.0.0.1:42339": 250
+          }
+        },
+        {
+          "documentos": 500,
+          "aceptados": 500,
+          "tasa_exito_pct": 100.0,
+          "duracion_s": 5.122,
+          "docs_por_s": 97.6,
+          "p50_ms": 644.0,
+          "p95_ms": 678.0,
+          "p99_ms": 690.8,
+          "max_ms": 706.6,
+          "reintentos": 0,
+          "intentos_fallidos": {},
+          "por_nodo": {
+            "127.0.0.1:42339": 250,
+            "127.0.0.1:45861": 250
+          }
+        }
+      ]
+    }
+  },
+  "e4_robustez": {
+    "duracion_s": 18.0,
+    "t_caida_s": 5.0,
+    "t_regreso_s": 11.0,
+    "concurrencia": 12,
+    "caida_real_s": 5.0,
+    "regreso_real_s": 11.12,
+    "deteccion_s": 0.01,
+    "recuperacion_s": 0.96,
+    "global": {
+      "documentos": 4614,
+      "aceptados": 4614,
+      "tasa_exito_pct": 100.0,
+      "duracion_s": 18.0,
+      "docs_por_s": 256.3,
+      "p50_ms": 44.4,
+      "p95_ms": 72.0,
+      "p99_ms": 80.7,
+      "max_ms": 186.7
+    },
+    "docs_por_s_antes": 293.5,
+    "docs_por_s_con_caida": 197.8,
+    "docs_por_s_despues": 294,
+    "reintentos": 7,
+    "intentos_fallidos": {
+      "conexion": 7
+    },
+    "por_nodo": {
+      "127.0.0.1:34953": 1775,
+      "127.0.0.1:41273": 1774,
+      "127.0.0.1:33147": 1065
+    },
+    "cambios_de_circuito": [
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "ABIERTO",
+        "t": 5.01
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "SEMIABIERTO",
+        "t": 6.01
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "ABIERTO",
+        "t": 6.01
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "SEMIABIERTO",
+        "t": 7.02
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "ABIERTO",
+        "t": 7.02
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "SEMIABIERTO",
+        "t": 8.03
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "ABIERTO",
+        "t": 8.03
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "SEMIABIERTO",
+        "t": 9.03
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "ABIERTO",
+        "t": 9.03
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "SEMIABIERTO",
+        "t": 10.03
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "ABIERTO",
+        "t": 10.03
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "SEMIABIERTO",
+        "t": 11.03
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "ABIERTO",
+        "t": 11.03
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "SEMIABIERTO",
+        "t": 12.03
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "estado": "CERRADO",
+        "t": 12.08
+      }
+    ],
+    "estado_final": [
+      {
+        "nodo": "127.0.0.1:41273",
+        "circuito": "CERRADO",
+        "en_curso": 0,
+        "enviados": 1778,
+        "exitos": 1814,
+        "fallos": 0,
+        "saturaciones": 0,
+        "fallos_seguidos": 0,
+        "carga": {
+          "nombre": "nodo-1",
+          "hilos": 4,
+          "capacidad_cola": 32,
+          "en_proceso": 4,
+          "en_espera": 0,
+          "cache": 1730,
+          "conexiones": 7,
+          "uptime_seg": 18.2,
+          "aceptadas": 1734,
+          "procesadas": 1730,
+          "saturadas": 0,
+          "duplicadas": 0,
+          "errores": 0
+        }
+      },
+      {
+        "nodo": "127.0.0.1:33147",
+        "circuito": "CERRADO",
+        "en_curso": 0,
+        "enviados": 1076,
+        "exitos": 1090,
+        "fallos": 10,
+        "saturaciones": 0,
+        "fallos_seguidos": 0,
+        "carga": {
+          "nombre": "nodo-2",
+          "hilos": 4,
+          "capacidad_cola": 32,
+          "en_proceso": 4,
+          "en_espera": 0,
+          "cache": 532,
+          "conexiones": 5,
+          "uptime_seg": 6.4,
+          "aceptadas": 536,
+          "procesadas": 532,
+          "saturadas": 0,
+          "duplicadas": 0,
+          "errores": 0
+        }
+      },
+      {
+        "nodo": "127.0.0.1:34953",
+        "circuito": "CERRADO",
+        "en_curso": 0,
+        "enviados": 1779,
+        "exitos": 1815,
+        "fallos": 0,
+        "saturaciones": 0,
+        "fallos_seguidos": 0,
+        "carga": {
+          "nombre": "nodo-3",
+          "hilos": 4,
+          "capacidad_cola": 32,
+          "en_proceso": 4,
+          "en_espera": 0,
+          "cache": 1731,
+          "conexiones": 7,
+          "uptime_seg": 18.1,
+          "aceptadas": 1735,
+          "procesadas": 1731,
+          "saturadas": 0,
+          "duplicadas": 0,
+          "errores": 0
+        }
+      }
+    ],
+    "serie": [
+      {
+        "t": 0,
+        "docs": 284,
+        "p95_ms": 50.0,
+        "fallidos": 0
+      },
+      {
+        "t": 1,
+        "docs": 297,
+        "p95_ms": 49.9,
+        "fallidos": 0
+      },
+      {
+        "t": 2,
+        "docs": 297,
+        "p95_ms": 49.4,
+        "fallidos": 0
+      },
+      {
+        "t": 3,
+        "docs": 292,
+        "p95_ms": 50.0,
+        "fallidos": 0
+      },
+      {
+        "t": 4,
+        "docs": 288,
+        "p95_ms": 49.9,
+        "fallidos": 0
+      },
+      {
+        "t": 5,
+        "docs": 199,
+        "p95_ms": 80.2,
+        "fallidos": 0
+      },
+      {
+        "t": 6,
+        "docs": 197,
+        "p95_ms": 79.6,
+        "fallidos": 0
+      },
+      {
+        "t": 7,
+        "docs": 192,
+        "p95_ms": 76.2,
+        "fallidos": 0
+      },
+      {
+        "t": 8,
+        "docs": 204,
+        "p95_ms": 75.4,
+        "fallidos": 0
+      },
+      {
+        "t": 9,
+        "docs": 200,
+        "p95_ms": 75.9,
+        "fallidos": 0
+      },
+      {
+        "t": 10,
+        "docs": 196,
+        "p95_ms": 80.5,
+        "fallidos": 0
+      },
+      {
+        "t": 11,
+        "docs": 199,
+        "p95_ms": 80.3,
+        "fallidos": 0
+      },
+      {
+        "t": 12,
+        "docs": 287,
+        "p95_ms": 54.0,
+        "fallidos": 0
+      },
+      {
+        "t": 13,
+        "docs": 295,
+        "p95_ms": 49.9,
+        "fallidos": 0
+      },
+      {
+        "t": 14,
+        "docs": 296,
+        "p95_ms": 49.8,
+        "fallidos": 0
+      },
+      {
+        "t": 15,
+        "docs": 289,
+        "p95_ms": 49.9,
+        "fallidos": 0
+      },
+      {
+        "t": 16,
+        "docs": 298,
+        "p95_ms": 50.0,
+        "fallidos": 0
+      },
+      {
+        "t": 17,
+        "docs": 292,
+        "p95_ms": 50.2,
+        "fallidos": 0
+      }
+    ]
+  },
+  "e5_servicio_sin_latencia": {
+    "concurrencia": 16,
+    "filas": [
+      {
+        "nodos": 1,
+        "documentos": 95,
+        "aceptados": 95,
+        "tasa_exito_pct": 100.0,
+        "duracion_s": 0.26,
+        "docs_por_s": 365.3,
+        "p50_ms": 16.3,
+        "p95_ms": 80.9,
+        "p99_ms": 109.3,
+        "max_ms": 122.5,
+        "consecutivos_unicos": true
+      },
+      {
+        "nodos": 4,
+        "documentos": 95,
+        "aceptados": 95,
+        "tasa_exito_pct": 100.0,
+        "duracion_s": 0.3,
+        "docs_por_s": 317.0,
+        "p50_ms": 22.5,
+        "p95_ms": 71.3,
+        "p99_ms": 128.3,
+        "max_ms": 157.0,
+        "consecutivos_unicos": true
+      }
+    ]
+  }
+}
