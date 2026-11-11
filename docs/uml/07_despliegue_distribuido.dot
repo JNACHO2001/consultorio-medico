@@ -1,0 +1,43 @@
+digraph despliegue {
+  graph [rankdir=TB, fontname="DejaVu Sans", fontsize=15, labelloc=t, pad=0.35, nodesep=0.5, ranksep=0.9, compound=true,
+         label="Diagrama de despliegue — Facturación electrónica distribuida\nSistema «Salud Integral»\n "];
+  node  [fontname="DejaVu Sans", fontsize=11, style="filled", penwidth=1.4, margin="0.2,0.12"];
+  edge  [fontname="DejaVu Sans", fontsize=10, color="#444444", arrowsize=0.8];
+
+  subgraph cluster_cli {
+    label="Equipo del usuario  «dispositivo»"; style="rounded,filled"; fillcolor="#F6F6F6"; color="#555555"; fontcolor="#555555"; penwidth=2;
+    NAV [label="Navegador web\n(recepción, médico, administración)", shape=box, fillcolor="white", color="#555555"];
+  }
+
+  subgraph cluster_app {
+    label="Servidor de aplicación  «contenedor Docker · Render / Cloud Run»"; style="rounded,filled"; fillcolor="#F4F8FD";
+    color="#1F5FA8"; fontcolor="#1F5FA8"; penwidth=2;
+    API [label="API REST FastAPI + interfaz web\n«artefacto»", shape=component, fillcolor="#DCE9F8", color="#1F5FA8"];
+    SVCS [label="Servicios y repositorios en memoria\n«artefacto»", shape=component, fillcolor="#DCE9F8", color="#1F5FA8"];
+    PROX [label="ProveedorProxy + MediadorNodos\n«artefacto»", shape=component, fillcolor="#DDF0DD", color="#2E7D32"];
+    HILOS [label="Hilos del proceso:\n· servidor uvicorn\n· bus-eventos (Observer)\n· vigilante-nodos (latidos)", shape=note, fillcolor="#EBE0F7", color="#6A3FA0"];
+  }
+
+  subgraph cluster_h1 {
+    label="Host de nodos 1  «máquina o contenedor»"; style="rounded,filled"; fillcolor="#FFF8EE"; color="#C45A00"; fontcolor="#C45A00"; penwidth=2;
+    N1 [label="nodo-1  :9101\n«proceso Python»\nservidor TCP + pool de 4 hilos\n+ caché de idempotencia", shape=box3d, fillcolor="#FFE9D2", color="#C45A00"];
+    N2 [label="nodo-2  :9102\n«proceso Python»\nservidor TCP + pool de 4 hilos\n+ caché de idempotencia", shape=box3d, fillcolor="#FFE9D2", color="#C45A00"];
+  }
+  subgraph cluster_h2 {
+    label="Host de nodos 2  «máquina o contenedor»"; style="rounded,filled"; fillcolor="#FFF8EE"; color="#C45A00"; fontcolor="#C45A00"; penwidth=2;
+    N3 [label="nodo-3  :9101\n«proceso Python»\nservidor TCP + pool de 4 hilos\n+ caché de idempotencia", shape=box3d, fillcolor="#FFE9D2", color="#C45A00"];
+  }
+
+  DIAN [label="Proveedor tecnológico autorizado\n«sistema externo · trabajo futuro»", shape=box3d, style="filled,dashed", fillcolor="#EEEEEE", color="#555555", fontcolor="#555555"];
+
+  NAV -> API [label=" HTTPS :443\n JSON", penwidth=1.6, color="#1F5FA8"];
+  API -> SVCS;
+  SVCS -> PROX;
+  PROX -> HILOS [style=dotted, arrowhead=none];
+  PROX -> N1 [label=" TCP :9101\n JSON por línea", penwidth=1.8, color="#C45A00"];
+  PROX -> N2 [label=" TCP :9102", penwidth=1.8, color="#C45A00"];
+  PROX -> N3 [label=" TCP :9101", penwidth=1.8, color="#C45A00"];
+  N1 -> DIAN [style=dashed, color="#555555", label=" HTTPS\n (futuro)"];
+  N2 -> DIAN [style=dashed, color="#555555"];
+  N3 -> DIAN [style=dashed, color="#555555"];
+}
