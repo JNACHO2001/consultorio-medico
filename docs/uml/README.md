@@ -9,6 +9,9 @@ Los diagramas están escritos en [PlantUML](https://plantuml.com) y se derivan d
 | `02b_clases_repository.puml` | Clases (2 de 2): servicios y patrón Repository | `img/02b_clases_repository.png` |
 | `03_secuencia_agendar_cita.puml` | Secuencia: CU-04 Agendar cita | `img/03_secuencia_agendar_cita.png` |
 | `04_despliegue.puml` | Despliegue en la nube | `img/04_despliegue.png` |
+| `05_componentes_distribuido.dot` | Componentes: facturación electrónica distribuida (Unidad 2) | `img/05_componentes_distribuido.png` |
+| `render_distribuido.py` | Secuencia: emitir con failover entre nodos (Unidad 2) | `img/06_secuencia_distribuida.png` |
+| `07_despliegue_distribuido.dot` | Despliegue: API, nodos proveedor y red (Unidad 2) | `img/07_despliegue_distribuido.png` |
 
 ## Cómo generar las imágenes
 
@@ -71,6 +74,30 @@ Se presentan dos vistas del mismo modelo para mantener la legibilidad.
 **Justificación.** Demuestra que la arquitectura cumple los atributos de calidad que motivaron el proyecto: respaldos automáticos (D-04, RNF-05), disponibilidad (RNF-04), comunicación cifrada (RNF-02) y acceso desde un navegador sin instalación (RNF-10). Está dibujado sin atarse a un proveedor concreto; el proveedor y el servicio de cada nodo se definen al construir el prototipo.
 
 **Requisitos que cubre:** RF-09, RF-10, RNF-02, RNF-04, RNF-05, RNF-10.
+
+---
+
+## Diagramas de la arquitectura distribuida (Unidad 2)
+
+Se dibujan con Graphviz y Matplotlib, a color, ejecutando `python docs/uml/render_distribuido.py` (genera PNG y SVG en `img/`). Los diagramas 05 y 07 se guardan también como fuentes DOT.
+
+### 5. Componentes
+
+**Descripción.** El servidor de aplicación contiene el servicio de facturación electrónica, el `ProveedorProxy` (que implementa `IProveedorTecnologico`), el `MediadorNodos` con su circuit breaker, el `ClienteNodo` con pool de conexiones, el `BusEventos` con sus observadores y un hilo vigilante. Cada nodo proveedor es un proceso independiente con servidor TCP, pool de hilos, caché de idempotencia y el proveedor simulado.
+
+**Justificación.** Separa lo que cambia (cuántos nodos y dónde están) de lo que no (el servicio de facturación). El proxy oculta la distribución; el mediador concentra el conocimiento de los nodos; el bus desacopla la observación.
+
+### 6. Secuencia: emitir una factura electrónica con failover
+
+**Descripción.** Recorre el camino completo: reserva del consecutivo con candado, envío fuera del candado, despacho al nodo A, y, si falla o está saturado, registro del fallo, espera con backoff y reintento en el nodo B con la misma clave de idempotencia. Los eventos se publican de forma asíncrona.
+
+**Justificación.** Muestra la interacción entre nodos e hilos (hilo de conexión y pool de hilos en cada nodo) y cómo el sistema tolera la caída de un nodo sin perder ni duplicar documentos.
+
+### 7. Despliegue
+
+**Descripción.** El navegador usa HTTPS contra el servidor de aplicación (contenedor); este abre conexiones TCP con JSON por línea hacia los nodos, que pueden estar en la misma máquina o en hosts distintos. El proveedor tecnológico real (DIAN) queda como sistema externo futuro.
+
+**Justificación.** Evidencia la distribución física y lógica y que agregar capacidad es agregar nodos y sus direcciones en `NODOS_PROVEEDOR`, sin tocar el código.
 
 ---
 
