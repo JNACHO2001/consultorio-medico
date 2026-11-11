@@ -48,6 +48,12 @@ class Configuracion:
     dian_pin_software: str = "75315"
     dian_obligatoria: bool = True  # RN-22: no se radica una factura sin factura electrónica aceptada
     caja_obligatoria: bool = True  # RN-25: el cajero necesita una caja abierta para cobrar al paciente
+    # Facturación electrónica distribuida (Unidad 2). Sin nodos se usa el proveedor simulado local.
+    nodos_proveedor: tuple[str, ...] = ()  # "host:puerto" de cada nodo
+    proxy_timeout_seg: float = 3.0
+    proxy_max_intentos: int = 4
+    circuito_fallos: int = 3  # fallos seguidos que abren el circuito de un nodo
+    circuito_enfriamiento_seg: float = 2.0
 
 
 def cargar_configuracion() -> Configuracion:
@@ -80,4 +86,9 @@ def cargar_configuracion() -> Configuracion:
         dian_pin_software=os.getenv("DIAN_PIN_SOFTWARE", "75315"),
         dian_obligatoria=_booleano(os.getenv("DIAN_OBLIGATORIA"), True),
         caja_obligatoria=_booleano(os.getenv("CAJA_OBLIGATORIA"), True),
+        nodos_proveedor=tuple(n.strip() for n in os.getenv("NODOS_PROVEEDOR", "").split(",") if n.strip()),
+        proxy_timeout_seg=float(os.getenv("PROXY_TIMEOUT_SEG", "3.0")),
+        proxy_max_intentos=int(os.getenv("PROXY_MAX_INTENTOS", "4")),
+        circuito_fallos=int(os.getenv("CIRCUITO_FALLOS", "3")),
+        circuito_enfriamiento_seg=float(os.getenv("CIRCUITO_ENFRIAMIENTO_SEG", "2.0")),
     )
