@@ -77,9 +77,13 @@ def crear_app(config: Optional[Configuracion] = None) -> FastAPI:
         tarea = None
         if config.recordatorios_automaticos:
             tarea = asyncio.create_task(_ciclo_recordatorios(contenedor))
+        if contenedor.cluster is not None:
+            contenedor.cluster.iniciar()  # bus de eventos y latidos hacia los nodos
         yield
         if tarea is not None:
             tarea.cancel()
+        if contenedor.cluster is not None:
+            contenedor.cluster.detener()
 
     app = FastAPI(
         title="Consultorio Médico Salud Integral",
