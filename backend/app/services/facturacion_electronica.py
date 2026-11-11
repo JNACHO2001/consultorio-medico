@@ -122,7 +122,9 @@ class FacturacionElectronicaService:
                 consecutivo=self._siguiente_consecutivo(T.FACTURA),
             )
             self._llenar_factura(doc, factura)
-            return self._enviar(doc, factura, nuevo=True)
+            doc = self._reservar(doc, nuevo=True)
+        # La transmisión va fuera del candado: es lenta (red, nodos remotos) y no debe frenar a las demás emisiones.
+        return self._transmitir(doc, nuevo=True)
 
     def reintentar(self, documento_id: int, usuario: Usuario) -> DocumentoElectronico:
         """Vuelve a generar y enviar una factura electrónica rechazada, conservando su numeración."""
@@ -136,7 +138,8 @@ class FacturacionElectronicaService:
             if factura.estado == EstadoFactura.ANULADA:
                 raise ReglaNegocio("La factura está anulada: no se reintenta.")
             self._llenar_factura(doc, factura)
-            return self._enviar(doc, factura, nuevo=False)
+            doc = self._reservar(doc, nuevo=False)
+        return self._transmitir(doc, nuevo=False)
 
     # ------------------------------------------------------------------ notas crédito
 
@@ -149,7 +152,8 @@ class FacturacionElectronicaService:
         glosa_id: Optional[int] = None,
     ) -> DocumentoElectronico:
         with self._lock:
-            return self._nota_credito(factura_id, concepto, motivo, glosa_id)
+            nota = self._preparar_nota_credito(factura_id, concepto, motivo, glosa_id)
+        return self._transmitir(nota, nuevo=True)
 
     def anular_con_nota_credito(self, factura_id: int, motivo: str, usuario: Usuario) -> Factura:
         """Anula una factura que ya tiene factura electrónica aceptada: primero la nota crédito, luego la anulación."""
@@ -160,9 +164,10 @@ class FacturacionElectronicaService:
             factura = self._facturacion.obtener(factura_id)
             if factura.pagos or factura.radicada:
                 raise ReglaNegocio("La factura ya tiene pagos o fue radicada: no se puede anular.")
-            nota = self._nota_credito(factura_id, ConceptoNotaCredito.ANULACION, motivo, None)
-            if nota.estado != E.ACEPTADO:
-                raise ReglaNegocio(f"No se anuló: la nota crédito fue rechazada. {nota.mensaje_respuesta}")
+            nota = self._preparar_nota_credito(factura_id, ConceptoNotaCredito.ANULACION, motivo, None)
+        nota = self._transmitir(nota, nuevo=True)
+        if nota.estado != E.ACEPTADO:
+            raise ReglaNegocio(f"No se anuló: la nota crédito fue rechazada. {nota.mensaje_respuesta}")
         return self._facturacion.anular(factura_id, f"{motivo} (nota crédito {nota.numero})", desde_nota_credito=True)
 
     # ------------------------------------------------------------------ internos
@@ -227,20 +232,40 @@ class FacturacionElectronicaService:
         doc.qr = generar_qr(doc, nit, self._config.dian_ambiente, self._config.zona_horaria)
         doc.xml = generar_xml(self._datos_xml(doc, factura, self._lineas(factura)), self._config)
 
-    def _enviar(self, doc: DocumentoElectronico, factura: Optional[Factura], nuevo: bool) -> DocumentoElectronico:
-        ahora = ahora_local(self._config.zona_horaria)
-        doc.eventos.append(EventoDocumento(ahora, E.GENERADO, f"Documento {doc.numero} generado con su CUFE y su XML."))
-        respuesta = self._proveedor.enviar(doc)
+    def _reservar(self, doc: DocumentoElectronico, nuevo: bool) -> DocumentoElectronico:
+        """Paso 1 (con el candado): numera el documento y lo guarda como GENERADO.
+
+        Así el consecutivo queda reservado y cualquier otra emisión de la misma factura ve el documento
+        en curso (y recibe un conflicto) mientras se transmite, sin que nadie espere al proveedor.
+        """
+        doc.estado = E.GENERADO
+        doc.eventos.append(
+            EventoDocumento(ahora_local(self._config.zona_horaria), E.GENERADO,
+                            f"Documento {doc.numero} generado con su CUFE y su XML.")
+        )
+        return self._documentos.agregar(doc) if nuevo else self._documentos.actualizar(doc)
+
+    def _transmitir(self, doc: DocumentoElectronico, nuevo: bool) -> DocumentoElectronico:
+        """Paso 2 (sin el candado): envía al proveedor y guarda su respuesta."""
+        try:
+            respuesta = self._proveedor.enviar(doc)
+        except Exception:
+            doc.estado = E.RECHAZADO  # no se queda «en curso» para siempre: queda listo para «Reintentar»
+            doc.codigo_respuesta = "ERR-PROVEEDOR"
+            doc.mensaje_respuesta = "Error inesperado al transmitir el documento."
+            doc.eventos.append(EventoDocumento(ahora_local(self._config.zona_horaria), doc.estado, doc.mensaje_respuesta))
+            self._documentos.actualizar(doc)
+            raise
         doc.intentos += 1
         doc.estado = E.ACEPTADO if respuesta.aceptado else E.RECHAZADO
         doc.codigo_respuesta = respuesta.codigo
         doc.mensaje_respuesta = respuesta.mensaje
         doc.eventos.append(EventoDocumento(ahora_local(self._config.zona_horaria), doc.estado, respuesta.mensaje))
-        guardado = self._documentos.agregar(doc) if nuevo else self._documentos.actualizar(doc)
+        guardado = self._documentos.actualizar(doc)
         auditar(self._auditoria, "DocumentoElectronico", "EMISION" if nuevo else "REINTENTO", guardado.id)
         return guardado
 
-    def _nota_credito(
+    def _preparar_nota_credito(
         self, factura_id: int, concepto: ConceptoNotaCredito, motivo: str, glosa_id: Optional[int]
     ) -> DocumentoElectronico:
         factura = self._facturacion.obtener(factura_id)
@@ -292,4 +317,4 @@ class FacturacionElectronicaService:
             ),
             self._config,
         )
-        return self._enviar(doc, None, nuevo=True)
+        return self._reservar(doc, nuevo=True)
