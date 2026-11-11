@@ -27,11 +27,16 @@ def estado(c: Contenedor = Depends(contenedor)) -> JSONResponse:
         except Exception:  # noqa: BLE001 - cualquier fallo del repositorio degrada el estado
             componentes[nombre] = "falla"
     sano = all(v == "ok" for v in componentes.values())
-    return JSONResponse(
-        status_code=200 if sano else 503,
-        content={
-            "estado": "ok" if sano else "degradado",
-            "componentes": componentes,
-            "hora_servidor": datetime.now(timezone.utc).isoformat(),
-        },
-    )
+    contenido = {
+        "estado": "ok" if sano else "degradado",
+        "componentes": componentes,
+        "hora_servidor": datetime.now(timezone.utc).isoformat(),
+    }
+    if c.cluster is not None:
+        # Informativo: con los nodos caídos la API sigue viva (las facturas quedan para «Reintentar»).
+        nodos = c.cluster.mediador.estado()
+        contenido["nodos_facturacion"] = {
+            "total": len(nodos),
+            "disponibles": sum(1 for n in nodos if n["circuito"] != "ABIERTO"),
+        }
+    return JSONResponse(status_code=200 if sano else 503, content=contenido)
