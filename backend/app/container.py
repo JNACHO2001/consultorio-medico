@@ -7,6 +7,7 @@ servicios y la API no se modifican.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 from app.config import Configuracion
 from app.repositories.interfaces import (
@@ -43,6 +44,7 @@ from app.repositories.memoria import (
     MemoryRecordatorioRepository,
     MemoryUsuarioRepository,
 )
+from app.distribuido.cluster import ClusterProveedor, crear_cluster
 from app.services.auditoria import AuditoriaService
 from app.services.autenticacion import AutenticacionService
 from app.services.caja import CajaService
@@ -101,6 +103,8 @@ class Contenedor:
     cie10: Cie10Service
     cajas: CajaService
     electronica: FacturacionElectronicaService
+    # Clúster de nodos proveedor (None = proveedor simulado dentro del mismo proceso)
+    cluster: Optional[ClusterProveedor] = None
 
 
 def crear_contenedor(config: Configuracion) -> Contenedor:
@@ -132,9 +136,12 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
     facturacion = FacturacionService(
         repo_facturas, repo_realizados, repo_ingresos, config, convenios, cajas, repo_documentos
     )
+    # Con NODOS_PROVEEDOR el proveedor es un proxy hacia nodos remotos; el servicio no nota la diferencia.
+    cluster = crear_cluster(config)
+    proveedor = cluster.proxy if cluster is not None else ProveedorSimulado(config)
     electronica = FacturacionElectronicaService(
         repo_documentos, facturacion, repo_pacientes, repo_realizados, convenios,
-        ProveedorSimulado(config), repo_auditoria, config,
+        proveedor, repo_auditoria, config,
     )
 
     return Contenedor(
@@ -174,4 +181,5 @@ def crear_contenedor(config: Configuracion) -> Contenedor:
         cie10=Cie10Service(),
         cajas=cajas,
         electronica=electronica,
+        cluster=cluster,
     )
