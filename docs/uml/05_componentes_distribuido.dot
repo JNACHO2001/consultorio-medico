@@ -1,0 +1,51 @@
+digraph componentes {
+  graph [rankdir=TB, fontname="DejaVu Sans", fontsize=15, labelloc=t, pad=0.35, nodesep=0.4, ranksep=0.8, compound=true,
+         label="Diagrama de componentes — Facturación electrónica distribuida\nSistema «Salud Integral»\n "];
+  node  [fontname="DejaVu Sans", fontsize=11, shape=component, style="filled", penwidth=1.4, margin="0.18,0.12"];
+  edge  [fontname="DejaVu Sans", fontsize=10, color="#444444", arrowsize=0.8];
+
+  subgraph cluster_api {
+    label="Servidor de aplicación (proceso uvicorn · FastAPI)"; style="rounded,filled"; fillcolor="#F4F8FD"; color="#1F5FA8";
+    fontcolor="#1F5FA8"; fontsize=12; penwidth=2;
+    API   [label="API REST\n/api/electronica/...", fillcolor="#DCE9F8", color="#1F5FA8"];
+    SVC   [label="FacturacionElectronicaService\n1) reservar (con candado)\n2) transmitir (sin candado)", fillcolor="#DCE9F8", color="#1F5FA8"];
+    IPROV [label="«interface»\nIProveedorTecnologico", shape=box, style="rounded,filled,dashed", fillcolor="white", color="#1F5FA8"];
+    PROXY [label="ProveedorProxy  «Proxy»\nreintentos · espera exponencial\nclave de idempotencia", fillcolor="#DDF0DD", color="#2E7D32"];
+    MED   [label="MediadorNodos  «Mediator»\nbalanceo (menos carga) ·\ncircuit breaker por nodo", fillcolor="#DDF0DD", color="#2E7D32"];
+    CLI   [label="ClienteNodo\npool de conexiones TCP", fillcolor="#DDF0DD", color="#2E7D32"];
+    BUS   [label="BusEventos  «Observer»\n(hilo despachador propio)", fillcolor="#EBE0F7", color="#6A3FA0"];
+    MET   [label="Metricas\n(observador: p50/p95/p99)", fillcolor="#EBE0F7", color="#6A3FA0"];
+    VIG   [label="Vigilante\n(hilo de latidos)", fillcolor="#EBE0F7", color="#6A3FA0"];
+  }
+
+  subgraph cluster_nodos {
+    label="Nodos proveedor (N procesos independientes)"; style="rounded,filled"; fillcolor="#FFF8EE"; color="#C45A00";
+    fontcolor="#C45A00"; fontsize=12; penwidth=2;
+    subgraph cluster_n1 {
+      label="nodo-1  (puerto 9101)"; style="rounded,filled"; fillcolor="white"; color="#C45A00"; fontcolor="#C45A00";
+      SRV   [label="Servidor TCP\n(un hilo por conexión)", fillcolor="#FFE9D2", color="#C45A00"];
+      POOL  [label="Pool de hilos\n(hilos + cola acotada)", fillcolor="#FFE9D2", color="#C45A00"];
+      CACHE [label="Caché de idempotencia", fillcolor="#FFE9D2", color="#C45A00"];
+      PROV  [label="ProveedorSimulado\n(validación local)", fillcolor="#FFE9D2", color="#C45A00"];
+    }
+    NN [label="nodo-2 … nodo-N\n(misma estructura)", fillcolor="#FFE9D2", color="#C45A00"];
+  }
+
+  DIAN [label="Proveedor tecnológico\nautorizado DIAN\n(trabajo futuro)", style="filled,dashed", fillcolor="#EEEEEE", color="#555555", fontcolor="#555555"];
+
+  API -> SVC;
+  SVC -> IPROV [label=" usa"];
+  PROXY -> IPROV [arrowhead=onormal, style=dashed, label=" implementa"];
+  PROXY -> MED [label=" despachar()"];
+  MED -> CLI [label=" solicitar()"];
+  CLI -> SRV [label=" TCP · JSON por línea", color="#C45A00", penwidth=1.8];
+  CLI -> NN  [label=" TCP", color="#C45A00", penwidth=1.8];
+  SRV -> POOL;
+  POOL -> CACHE;
+  POOL -> PROV;
+  PROXY -> BUS [label=" publica", color="#6A3FA0"];
+  MED -> BUS [label=" publica", color="#6A3FA0"];
+  BUS -> MET [label=" notifica", color="#6A3FA0"];
+  VIG -> MED [label=" sondear()", color="#6A3FA0"];
+  PROV -> DIAN [style=dashed, color="#555555", label=" (futuro)"];
+}
