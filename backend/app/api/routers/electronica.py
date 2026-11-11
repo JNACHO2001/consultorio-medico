@@ -39,6 +39,14 @@ def proveedor(c: Contenedor = Depends(contenedor), _: Usuario = Depends(_factura
     }
 
 
+@router.get("/nodos", summary="Estado del clúster de nodos proveedor (solo administración)")
+def nodos(c: Contenedor = Depends(contenedor), _: Usuario = Depends(requiere_roles(Rol.ADMINISTRADOR))) -> dict:
+    """Circuito, carga y métricas de cada nodo. En modo local (sin NODOS_PROVEEDOR) no hay nodos."""
+    if c.cluster is None:
+        return {"modo": "local", "nodos": [], "metricas": None}
+    return {"modo": "distribuido", **c.cluster.estado()}
+
+
 @router.get("/documentos/{documento_id}", response_model=DocumentoElectronicoOut, summary="Ver un documento electrónico")
 def ver(documento_id: int, c: Contenedor = Depends(contenedor), _: Usuario = Depends(_facturacion)) -> DocumentoElectronicoOut:
     return documentos_out(c, [c.electronica.obtener(documento_id)])[0]
