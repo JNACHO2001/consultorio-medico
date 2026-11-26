@@ -1,0 +1,102 @@
+[
+ {
+  "nivel": 1,
+  "texto": "Introducción"
+ },
+ {
+  "nivel": 1,
+  "texto": "Planteamiento del problema de navegación"
+ },
+ {
+  "nivel": 2,
+  "texto": "Delimitación del problema"
+ },
+ {
+  "nivel": 2,
+  "texto": "Relevancia e impacto"
+ },
+ {
+  "nivel": 2,
+  "texto": "Criterios de diseño"
+ },
+ {
+  "nivel": 1,
+  "texto": "Investigación y análisis"
+ },
+ {
+  "nivel": 2,
+  "texto": "Estrategias de navegación en la literatura"
+ },
+ {
+  "nivel": 2,
+  "texto": "Enfoques en sistemas reales"
+ },
+ {
+  "nivel": 1,
+  "texto": "Diseño y modelado arquitectónico"
+ },
+ {
+  "nivel": 2,
+  "texto": "Vista de componentes"
+ },
+ {
+  "nivel": 2,
+  "texto": "Vista de clases"
+ },
+ {
+  "nivel": 2,
+  "texto": "Flujo de navegación en el tiempo"
+ },
+ {
+  "nivel": 2,
+  "texto": "Decisiones del despachador"
+ },
+ {
+  "nivel": 1,
+  "texto": "Patrones de diseño aplicados"
+ },
+ {
+  "nivel": 1,
+  "texto": "Prototipo funcional"
+ },
+ {
+  "nivel": 1,
+  "texto": "Pruebas y resultados"
+ },
+ {
+  "nivel": 2,
+  "texto": "Método"
+ },
+ {
+  "nivel": 2,
+  "texto": "Latencia de búsqueda"
+ },
+ {
+  "nivel": 2,
+  "texto": "Costo por pulsación y efecto del retardo"
+ },
+ {
+  "nivel": 2,
+  "texto": "Costo de construir el índice"
+ },
+ {
+  "nivel": 2,
+  "texto": "Profundidad de navegación"
+ },
+ {
+  "nivel": 2,
+  "texto": "Pruebas automáticas"
+ },
+ {
+  "nivel": 1,
+  "texto": "Discusión y oportunidades de mejora"
+ },
+ {
+  "nivel": 1,
+  "texto": "Conclusiones"
+ },
+ {
+  "nivel": 1,
+  "texto": "Referencias"
+ }
+]
