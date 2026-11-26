@@ -1,0 +1,150 @@
+{
+ "n1_latencia": [
+  {
+   "n": 149,
+   "estrategia": "secuencial",
+   "p50_ms": 0.033,
+   "p95_ms": 0.036,
+   "media_ms": 0.033
+  },
+  {
+   "n": 149,
+   "estrategia": "indice",
+   "p50_ms": 0.002,
+   "p95_ms": 0.004,
+   "media_ms": 0.003
+  },
+  {
+   "n": 1000,
+   "estrategia": "secuencial",
+   "p50_ms": 0.225,
+   "p95_ms": 0.244,
+   "media_ms": 0.227
+  },
+  {
+   "n": 1000,
+   "estrategia": "indice",
+   "p50_ms": 0.005,
+   "p95_ms": 0.008,
+   "media_ms": 0.006
+  },
+  {
+   "n": 5000,
+   "estrategia": "secuencial",
+   "p50_ms": 1.157,
+   "p95_ms": 1.698,
+   "media_ms": 1.318
+  },
+  {
+   "n": 5000,
+   "estrategia": "indice",
+   "p50_ms": 0.029,
+   "p95_ms": 0.034,
+   "media_ms": 0.03
+  },
+  {
+   "n": 12000,
+   "estrategia": "secuencial",
+   "p50_ms": 2.757,
+   "p95_ms": 2.77,
+   "media_ms": 2.763
+  },
+  {
+   "n": 12000,
+   "estrategia": "indice",
+   "p50_ms": 0.099,
+   "p95_ms": 0.104,
+   "media_ms": 0.106
+  }
+ ],
+ "n2_pulsaciones": [
+  {
+   "n": 12000,
+   "estrategia": "secuencial",
+   "pulsaciones": 8,
+   "sin_debounce_p50_ms": 28.608,
+   "con_debounce_p50_ms": 2.725
+  },
+  {
+   "n": 12000,
+   "estrategia": "indice",
+   "pulsaciones": 8,
+   "sin_debounce_p50_ms": 3.087,
+   "con_debounce_p50_ms": 0.051
+  }
+ ],
+ "n3_construccion": [
+  {
+   "n": 149,
+   "construccion_p50_ms": 1.553,
+   "claves": 1998
+  },
+  {
+   "n": 1000,
+   "construccion_p50_ms": 11.179,
+   "claves": 3723
+  },
+  {
+   "n": 5000,
+   "construccion_p50_ms": 69.765,
+   "claves": 9188
+  },
+  {
+   "n": 12000,
+   "construccion_p50_ms": 205.862,
+   "claves": 16495
+  }
+ ],
+ "n4_profundidad": {
+  "RECEPCION": {
+   "pantallas_totales": 10,
+   "en_menu": 9,
+   "anidadas": 1,
+   "pasos_promedio": 1.1,
+   "pasos_maximo": 2,
+   "ocultas_por_rol": 7
+  },
+  "MEDICO": {
+   "pantallas_totales": 6,
+   "en_menu": 4,
+   "anidadas": 2,
+   "pasos_promedio": 1.33,
+   "pasos_maximo": 2,
+   "ocultas_por_rol": 11
+  },
+  "ADMINISTRADOR": {
+   "pantallas_totales": 10,
+   "en_menu": 10,
+   "anidadas": 0,
+   "pasos_promedio": 1.0,
+   "pasos_maximo": 1,
+   "ocultas_por_rol": 7
+  },
+  "LABORATORIO": {
+   "pantallas_totales": 1,
+   "en_menu": 1,
+   "anidadas": 0,
+   "pasos_promedio": 1.0,
+   "pasos_maximo": 1,
+   "ocultas_por_rol": 16
+  },
+  "_rutas_declaradas": 17
+ },
+ "consultas": [
+  "diabetes",
+  "hipertension",
+  "a09",
+  "infeccion urinaria",
+  "lumbago",
+  "faringitis aguda",
+  "e11",
+  "control",
+  "cefalea",
+  "anemia",
+  "embarazo",
+  "asma",
+  "gastritis",
+  "j00",
+  "dolor abdominal"
+ ]
+}
