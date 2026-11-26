@@ -1,0 +1,24 @@
+digraph clases {
+  graph [rankdir=TB, fontname="DejaVu Sans", fontsize=15, labelloc=t, pad=0.35, nodesep=0.45, ranksep=0.6,
+         bgcolor="white", label="Diagrama de clases — Rutas y estrategias de búsqueda\n "];
+  node  [fontname="DejaVu Sans", fontsize=10, shape=record, style=filled, fillcolor="white", color="black", penwidth=1.2];
+  edge  [fontname="DejaVu Sans", fontsize=9.5, color="black", arrowsize=0.8];
+
+  Ruta  [label="{Ruta|+ titulo: str\l+ roles: Rol[]\l+ oculta: bool\l+ padre: Ruta?\l|+ montar(contenedor, ctx)\l}"];
+  Tabla [label="{TablaDeRutas|- rutas: Map\<str, Ruta\>\l- inicio: Map\<Rol, str\>\l|+ resolver(hash): Ruta\l+ visibles(rol): Ruta[]\l+ ruta_padre(r): Ruta?\l}"];
+  Desp  [label="{Despachador  «Front Controller»|- version: int\l|+ mostrar(): void\l- autorizar(ruta, usuario)\l- marcar_activo(ruta)\l}"];
+
+  Svc   [label="{Cie10Service|- estrategia: EstrategiaBusqueda\l|+ buscar(q, limite): (str, str)[]\l+ descripcion(codigo): str?\l}"];
+  IEst  [label="{«interface»\nEstrategiaBusqueda|+ nombre: str\l|+ buscar(q): Iterator\l+ descripcion(codigo): str?\l}", style="filled,dashed"];
+  Sec   [label="{BusquedaSecuencial|- indice: (str, str, str)[]\l|+ buscar(q): Iterator\l  O(n · t) por consulta\l}"];
+  Idx   [label="{BusquedaIndiceInvertido|- postings: Map\<str, Set\<int\>\>\l- entradas: (str, str)[]\l|+ buscar(q): Iterator\l  interseca listas cortas\l+ tamano_indice: int\l}"];
+
+  Desp  -> Tabla [label="consulta", arrowhead=vee];
+  Tabla -> Ruta  [label="1..*", arrowhead=none, taillabel="◆", fontsize=9];
+  Ruta  -> Ruta  [label="padre  0..1", arrowhead=vee, style=dashed, constraint=false];
+  Desp  -> Ruta  [label="montar()", arrowhead=vee, style=dashed];
+  Svc   -> IEst  [label="usa", arrowhead=vee];
+  IEst  -> Sec   [arrowhead=empty, dir=back, style=dashed];
+  IEst  -> Idx   [arrowhead=empty, dir=back, style=dashed];
+  {rank=same; Sec; Idx;}
+}

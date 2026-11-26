@@ -1,0 +1,46 @@
+digraph componentes {
+  graph [rankdir=TB, fontname="DejaVu Sans", fontsize=15, labelloc=t, pad=0.35, nodesep=0.35, ranksep=0.65,
+         compound=true, bgcolor="white",
+         label="Diagrama de componentes — Navegación del sistema «Salud Integral»\n "];
+  node  [fontname="DejaVu Sans", fontsize=10.5, shape=component, style="filled", fillcolor="white",
+         color="black", penwidth=1.3, margin="0.16,0.11"];
+  edge  [fontname="DejaVu Sans", fontsize=9.5, color="black", arrowsize=0.75];
+
+  subgraph cluster_nav {
+    label="Navegador · aplicación de una sola página (frontend)"; style="rounded"; color="black";
+    fontsize=12; penwidth=1.6;
+    HASH  [label="Barra de direcciones\n#/ruta/parámetro", shape=box, style="rounded,filled", fillcolor="#E8E8E8"];
+    DESP  [label="Despachador  mostrar()\n«Front Controller»\nvalida rol · marca activo ·\ndescarta montajes viejos"];
+    TABLA [label="Tabla de rutas  RUTAS\n17 rutas: título, roles,\npadre, montar()", shape=folder, style="filled", fillcolor="#E8E8E8"];
+    MENU  [label="Menú lateral\nsolo las rutas del rol"];
+    VISTA [label="Vista montada\nmontarAgenda, montarIngresos, …\n«Strategy»"];
+    CLIEN [label="Cliente HTTP  api.js\nsesión · errores · reintento", fillcolor="#E8E8E8"];
+  }
+
+  subgraph cluster_api {
+    label="Servidor de aplicación (FastAPI)"; style="rounded"; color="black"; fontsize=12; penwidth=1.6;
+    REST  [label="API REST\n/api/cie10 · /api/pacientes …"];
+    GUARD [label="requiere_roles()\nsegunda validación del rol", shape=box, style="rounded,filled", fillcolor="#E8E8E8"];
+    SVC   [label="Cie10Service\nbuscar() · descripcion()"];
+    IEST  [label="«interface»\nEstrategiaBusqueda", shape=box, style="rounded,dashed,filled", fillcolor="white"];
+    SEC   [label="BusquedaSecuencial\nrecorre el catálogo"];
+    IDX   [label="BusquedaIndiceInvertido\níndice de prefijos"];
+  }
+
+  CAT [label="Catálogo CIE-10\n(muestra de 149 códigos;\noficial: más de 12.000)", shape=cylinder, style=filled, fillcolor="#E8E8E8"];
+
+  HASH  -> DESP  [label="hashchange"];
+  DESP  -> TABLA [label="consulta"];
+  DESP  -> MENU  [label="marca activo"];
+  MENU  -> HASH  [label="href #/ruta", style=dashed];
+  DESP  -> VISTA [label="montar(contenedor)"];
+  VISTA -> CLIEN [label="get/post"];
+  CLIEN -> REST  [label="HTTPS + token"];
+  REST  -> GUARD;
+  GUARD -> SVC   [label="autorizado"];
+  SVC   -> IEST  [label="delega", style=dashed];
+  IEST  -> SEC   [arrowhead=empty, style=dashed, dir=back];
+  IEST  -> IDX   [arrowhead=empty, style=dashed, dir=back];
+  SEC   -> CAT;
+  IDX   -> CAT   [label="indexa al arrancar"];
+}

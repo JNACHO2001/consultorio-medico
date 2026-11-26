@@ -1,0 +1,38 @@
+digraph actividad {
+  graph [rankdir=TB, fontname="DejaVu Sans", fontsize=15, labelloc=t, pad=0.35, nodesep=0.3, ranksep=0.42,
+         bgcolor="white", label="Diagrama de actividad — Resolución de una ruta\n "];
+  node  [fontname="DejaVu Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="white",
+         color="black", penwidth=1.2, margin="0.16,0.09"];
+  edge  [fontname="DejaVu Sans", fontsize=9.5, color="black", arrowsize=0.75];
+
+  ini  [label="", shape=circle, style=filled, fillcolor="black", width=0.22, height=0.22];
+  fin  [label="", shape=doublecircle, style=filled, fillcolor="black", width=0.20, height=0.20];
+
+  cambio [label="Cambia la dirección  #/ruta/parámetro"];
+  leer   [label="Leer la ruta y sus parámetros"];
+  existe [label="¿La ruta existe?", shape=diamond, style=filled, height=0.75, width=1.9];
+  permiso[label="¿El rol tiene permiso?", shape=diamond, style=filled, height=0.75, width=2.1];
+  inicio [label="Redirigir a la pantalla de inicio del rol"];
+  marcar [label="Marcar la opción activa del menú\n(la de la ruta padre, si es anidada)"];
+  token  [label="Tomar el turno:  version = ++version"];
+  cargar [label="Mostrar «Cargando…» y montar la vista"];
+  pedir  [label="Pedir los datos a la API\n(el servidor revalida el rol)"];
+  vigente[label="¿Sigue siendo\nel turno vigente?", shape=diamond, style=filled, height=0.8, width=2.1];
+  pintar [label="Pintar el contenido y llevar el foco"];
+  descart[label="Descartar la respuesta\n(el usuario ya navegó a otra parte)", style="rounded,filled,dashed", fillcolor="#E8E8E8"];
+  error  [label="Mostrar el aviso de error\nsin perder la navegación", style="rounded,filled,dashed", fillcolor="#E8E8E8"];
+
+  ini -> cambio -> leer -> existe;
+  existe  -> inicio  [label="  no"];
+  existe  -> permiso [label="  sí"];
+  permiso -> inicio  [label="  no"];
+  permiso -> marcar  [label="  sí"];
+  inicio  -> leer    [style=dashed];
+  marcar -> token -> cargar -> pedir -> vigente;
+  vigente -> pintar  [label="  sí"];
+  vigente -> descart [label="  no"];
+  pedir   -> error   [label="  falla", style=dashed];
+  pintar -> fin;
+  descart -> fin;
+  error -> fin;
+}
